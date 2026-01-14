@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>IDS SOC Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>📊 Security Overview</h1>
+
+<div class="charts">
+  <canvas id="attackChart"></canvas>
+  <canvas id="severityChart"></canvas>
+</div>
+
+<h2 style="margin-top:40px;">🕒 Recent Alerts (Last 24h)</h2>
+
+<div class="filters">
+  <label>
+    Severity:
+    <select id="alertSeverityFilter">
+      <option value="ALL">ALL</option>
+      <option value="CRITICAL">CRITICAL</option>
+      <option value="HIGH">HIGH</option>
+      <option value="MEDIUM">MEDIUM</option>
+      <option value="LOW">LOW</option>
+    </select>
+  </label>
+
+  <label>
+    Attack Type:
+    <select id="alertAttackFilter">
+      <option value="ALL">ALL</option>
+    </select>
+  </label>
+
+  <label>
+    Source IP:
+    <input type="text" id="alertIpFilter" placeholder="e.g. 127.0.0.1">
+  </label>
+</div>
+
+<table id="alerts">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Attack</th>
+      <th>Source IP</th>
+      <th>Severity</th>
+      <th>Confidence</th>
+      <th>URI</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+
+<h1>🚨 Active Incidents</h1>
+
+
+<div class="filters">
+  <label>
+    Severity:
+    <select id="severityFilter">
+      <option value="ALL">ALL</option>
+      <option value="CRITICAL">CRITICAL</option>
+      <option value="HIGH">HIGH</option>
+      <option value="MEDIUM">MEDIUM</option>
+      <option value="LOW">LOW</option>
+    </select>
+  </label>
+
+  <label>
+    Attack Type:
+    <select id="attackFilter">
+      <option value="ALL">ALL</option>
+    </select>
+  </label>
+
+  <label>
+    Source IP:
+    <input type="text" id="ipFilter" placeholder="e.g. 127.0.0.1">
+  </label>
+</div>
+
+
+
+
+<table id="incidents">
+  <thead>
+    <tr>
+      <th>Attack Type</th>
+      <th>Source IP</th>
+      <th>Severity</th>
+      <th>Count</th>
+      <th>Last Seen</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

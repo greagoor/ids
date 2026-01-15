@@ -1,0 +1,39 @@
+<h1>🚨 Active Incidents</h1>
+
+<div class="filters">
+  <label>
+    Severity:
+    <select id="severityFilter">
+      <option value="ALL">ALL</option>
+      <option value="CRITICAL">CRITICAL</option>
+      <option value="HIGH">HIGH</option>
+      <option value="MEDIUM">MEDIUM</option>
+      <option value="LOW">LOW</option>
+    </select>
+  </label>
+
+  <label>
+    Attack Type:
+    <select id="attackFilter">
+      <option value="ALL">ALL</option>
+    </select>
+  </label>
+
+  <label>
+    Source IP:
+    <input type="text" id="ipFilter" placeholder="e.g. 127.0.0.1">
+  </label>
+</div>
+
+<table id="incidents">
+  <thead>
+    <tr>
+      <th>Attack Type</th>
+      <th>Source IP</th>
+      <th>Severity</th>
+      <th>Count</th>
+      <th>Last Seen</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>

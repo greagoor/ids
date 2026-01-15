@@ -1,0 +1,53 @@
+<h2>🕒 Recent Alerts (Last 24h)</h2>
+
+<div class="filters">
+  <label>
+    Severity:
+    <select id="alertSeverityFilter">
+      <option value="ALL">ALL</option>
+      <option value="CRITICAL">CRITICAL</option>
+      <option value="HIGH">HIGH</option>
+      <option value="MEDIUM">MEDIUM</option>
+      <option value="LOW">LOW</option>
+    </select>
+  </label>
+
+  <label>
+    Attack Type:
+    <select id="alertAttackFilter">
+      <option value="ALL">ALL</option>
+    </select>
+  </label>
+
+  <label>
+    Source IP:
+    <input type="text" id="alertIpFilter" placeholder="e.g. 127.0.0.1">
+  </label>
+  <label>
+  Time:
+  <select id="alertTimeFilter">
+    <option value="ALL">ALL</option>
+    <option value="5">Last 5 min</option>
+    <option value="15">Last 15 min</option>
+    <option value="60">Last 1 hour</option>
+  </select>
+</label>
+<button id="exportAlertsBtn">⬇ Export CSV</button>
+<button id="exportAlertsJsonBtn">⬇ Export JSON</button>
+
+
+</div>
+
+<table id="alertsTable">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Attack</th>
+      <th>Source IP</th>
+      <th>Severity</th>
+      <th>Confidence</th>
+      <th>URI</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>

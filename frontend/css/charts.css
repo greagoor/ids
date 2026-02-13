@@ -1,0 +1,20 @@
+.chart-container {
+  background: #0f172a;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 20px rgba(0,255,255,0.15);
+  border: 1px solid rgba(0,255,255,0.2);
+}
+
+.chart-title {
+  color: #00ffff;
+  font-weight: 600;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+canvas {
+  width: 100% !important;
+  height: 350px !important;
+}

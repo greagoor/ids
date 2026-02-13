@@ -1,31 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>IDS SOC Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDS Detection Platform</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/charts.css">
+
 </head>
+
 <body>
-  <div class="layout">
 
-    <aside class="sidebar">
-      <h2>IDS SOC</h2>
-      <button data-view="charts">📊 Overview</button>
-      <button data-view="alerts">🕒 Alerts</button>
-      <button data-view="incidents">🚨 Incidents</button>
-    </aside>
+  <!-- VIDEO BACKGROUND -->
+  <video autoplay muted loop playsinline class="bg-video">
+    <source src="css/background.mp4" type="video/mp4">
+  </video>
 
-    <main class="content">
-      <section id="charts" class="view"></section>
-      <section id="alerts" class="view hidden"></section>
-      <section id="incidents" class="view hidden"></section>
-      <section id="modal"></section>
-    </main>
+  <!-- Soft dark overlay (light only for readability) -->
+  <div class="video-overlay"></div>
+
+
+  <!-- APP -->
+  <div class="app">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="brand">IDS Detection Platform</div>
+
+      <div class="system-status">
+        <div class="status-item">
+          <span class="status-indicator active"></span>
+          Engine Online
+        </div>
+
+        <div class="status-item">
+          <span class="status-indicator"></span>
+          ML Model Loaded
+        </div>
+
+        <div class="live-clock" id="clock"></div>
+      </div>
+    </header>
+
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <button data-view="charts" class="nav-btn active">Overview</button>
+        <button data-view="alerts" class="nav-btn">Alerts</button>
+        <button data-view="incidents" class="nav-btn">Incidents</button>
+      </aside>
+
+      <!-- CONTENT -->
+      <main class="content">
+
+        <!-- KPIs -->
+        <section class="kpi-row">
+          <div class="kpi-card">
+            <h4>Total Alerts</h4>
+            <p id="kpi-total">0</p>
+          </div>
+
+          <div class="kpi-card">
+            <h4>High Severity</h4>
+            <p id="kpi-high">0</p>
+          </div>
+
+          <div class="kpi-card">
+            <h4>Successful Attacks</h4>
+            <p id="kpi-success">0</p>
+          </div>
+
+          <div class="kpi-card">
+            <h4>Active Incidents</h4>
+            <p id="kpi-incidents">0</p>
+          </div>
+        </section>
+
+        <!-- VIEWS -->
+        <section id="charts" class="view"></section>
+        <section id="alerts" class="view hidden"></section>
+        <section id="incidents" class="view hidden"></section>
+
+        <section id="modal"></section>
+
+      </main>
+    </div>
 
   </div>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="module" src="js/main.js"></script>
-</body>
 
+  <script>
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent =
+        now.toLocaleString();
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  </script>
+
+</body>
 </html>

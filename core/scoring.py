@@ -21,12 +21,12 @@ INDICATOR_WEIGHTS = {
     "logic_bypass": 30,
     "keyword_sql": 25,
     "xss_pattern": 20,
+
+    # 🔥 NEW — ML fallback indicator
+    "ml_detected": 25,
 }
 
 def encoding_depth(uri: str) -> int:
-    """
-    Detects multiple URL decoding layers.
-    """
     depth = 0
     current = uri
     while "%" in current:

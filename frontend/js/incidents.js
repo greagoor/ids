@@ -1,5 +1,4 @@
 import { SUPABASE_URL, API_KEY } from "./config.js";
-import { renderAttackChart, renderSeverityChart } from "./charts.js";
 import { openIncidentModal } from "./modal.js";
 
 export let incidents = [];
@@ -38,8 +37,6 @@ document.getElementById("ipFilter").value =
 
 applyFilters();
 
-renderAttackChart(incidents);
-  renderSeverityChart(incidents);
 
 }
 

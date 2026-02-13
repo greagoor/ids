@@ -1,8 +1,9 @@
 import re
+from urllib.parse import urlparse, parse_qs
 
 SSRF_PARAMS = [
-    "url=", "uri=", "dest=", "redirect=", "next=",
-    "callback=", "fetch=", "image="
+    "url", "uri", "dest", "redirect", "next",
+    "callback", "fetch", "image"
 ]
 
 INTERNAL_TARGETS = [
@@ -17,13 +18,16 @@ INTERNAL_TARGETS = [
 def detect(decoded_uri: str):
     indicators = []
 
-    # SSRF only makes sense if a URL-like parameter exists
-    if not any(p in decoded_uri for p in SSRF_PARAMS):
-        return False, []
+    parsed = urlparse(decoded_uri)
+    query_params = parse_qs(parsed.query)
 
-    for t in INTERNAL_TARGETS:
-        if re.search(t, decoded_uri):
-            indicators.append("internal_resource")
-            return True, indicators
+    for param in SSRF_PARAMS:
+        if param in query_params:
+            values = query_params[param]
+            for value in values:
+                for t in INTERNAL_TARGETS:
+                    if re.search(t, value):
+                        indicators.append("internal_resource")
+                        return True, indicators
 
     return False, []

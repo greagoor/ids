@@ -1,5 +1,4 @@
-
-import { supabase } from "./config.js";
+import { SUPABASE_URL, API_KEY } from "./config.js";
 
 /* ===============================
    1. AREA LINE CHART (Attacks Over Time)
@@ -8,22 +7,23 @@ let timeChart;
 
 export async function renderTimeChart() {
 
-  const { data, error } = await supabase
-    .from("alerts")
-    .select("timestamp")
-    .order("timestamp", { ascending: true });
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/alerts?select=timestamp&order=timestamp.asc`,
+    {
+      headers: {
+        apikey: API_KEY,
+        Authorization: `Bearer ${API_KEY}`
+      }
+    }
+  );
 
-  if (error) {
-    console.error("Error fetching alerts:", error);
-    return;
-  }
+  const data = await res.json();
 
   const counts = {};
 
   data.forEach(row => {
     const time = new Date(row.timestamp);
     const label = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
     counts[label] = (counts[label] || 0) + 1;
   });
 
@@ -55,22 +55,7 @@ export async function renderTimeChart() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: { color: "#00ffff" }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: "#00ffff" },
-          grid: { color: "rgba(0,255,255,0.1)" }
-        },
-        y: {
-          ticks: { color: "#00ffff" },
-          grid: { color: "rgba(0,255,255,0.1)" }
-        }
-      }
+      maintainAspectRatio: false
     }
   });
 }
@@ -83,52 +68,43 @@ let attackTypeChart;
 
 export async function renderAttackTypeChart() {
 
-  const { data, error } = await supabase
-    .from("attack_type_stats")
-    .select("*");
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/attack_type_stats`,
+    {
+      headers: {
+        apikey: API_KEY,
+        Authorization: `Bearer ${API_KEY}`
+      }
+    }
+  );
 
-  if (error) {
-    console.error("Error fetching attack stats:", error);
-    return;
-  }
+  const data = await res.json();
 
   const labels = data.map(row => row.attack_type);
   const values = data.map(row => row.total_alerts);
 
   if (attackTypeChart) attackTypeChart.destroy();
 
-  attackTypeChart = new Chart(document.getElementById("attackTypeChart"), {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Total Alerts",
-        data: values,
-        backgroundColor: "rgba(255, 0, 128, 0.7)",
-        borderColor: "#ff0080",
-        borderWidth: 1,
-        borderRadius: 8
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: { color: "#ff0080" }
-        }
+  attackTypeChart = new Chart(
+    document.getElementById("attackTypeChart"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Total Alerts",
+          data: values,
+          backgroundColor: "rgba(255, 0, 128, 0.7)",
+          borderColor: "#ff0080",
+          borderWidth: 1,
+          borderRadius: 8
+        }]
       },
-      scales: {
-        x: {
-          ticks: { color: "#ff0080" },
-          grid: { color: "rgba(255,0,128,0.1)" }
-        },
-        y: {
-          ticks: { color: "#ff0080" },
-          grid: { color: "rgba(255,0,128,0.1)" }
-        }
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false
       }
     }
-  });
+  );
 }

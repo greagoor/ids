@@ -1,0 +1,222 @@
+/* ================================
+   ALERTS LAYOUT FIX
+================================ */
+
+.layout {
+  display: flex;
+  height: calc(100vh - 70px);
+}
+
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 25px;
+}
+
+
+/* ================================
+   ALERTS SECTION WRAPPER
+================================ */
+
+#alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ================================
+   SECTION TITLE
+================================ */
+
+#alerts h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #00ffff;
+  letter-spacing: 1px;
+}
+
+
+/* ================================
+   FILTER PANEL (GLASS STYLE)
+================================ */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 14px;
+
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(0,255,255,0.2);
+  box-shadow: 0 0 25px rgba(0,255,255,0.08);
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.filters select,
+.filters input {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #0f172a;
+  color: #00ffff;
+  border: 1px solid rgba(0,255,255,0.25);
+  border-radius: 8px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.filters select:focus,
+.filters input:focus {
+  border-color: #00ffff;
+  box-shadow: 0 0 10px rgba(0,255,255,0.4);
+}
+
+
+/* ================================
+   EXPORT BUTTONS
+================================ */
+
+.filters button {
+  align-self: flex-end;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+
+  background: linear-gradient(90deg, #00ffff, #ff0080);
+  color: black;
+}
+
+.filters button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(255,0,128,0.4);
+}
+
+
+/* ================================
+   ALERT TABLE
+================================ */
+
+#alertsTable {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 14px;
+  overflow: hidden;
+
+  background: rgba(15, 23, 42, 0.85);
+  box-shadow: 0 0 30px rgba(0,255,255,0.05);
+}
+
+
+/* TABLE HEADER */
+
+#alertsTable thead {
+  background: rgba(0,255,255,0.1);
+}
+
+#alertsTable th {
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: #00ffff;
+  border-bottom: 1px solid rgba(0,255,255,0.25);
+}
+
+
+/* TABLE BODY */
+
+#alertsTable td {
+  padding: 12px;
+  font-size: 13px;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#alertsTable tbody tr {
+  transition: 0.15s;
+}
+
+#alertsTable tbody tr:hover {
+  background: rgba(0,255,255,0.05);
+}
+
+
+/* ================================
+   SCROLLABLE TABLE BODY
+================================ */
+
+#alertsTable tbody {
+  display: block;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+#alertsTable thead,
+#alertsTable tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+
+/* ================================
+   SEVERITY BADGES
+================================ */
+
+.sev-CRITICAL {
+  color: #ff0033;
+  font-weight: 700;
+}
+
+.sev-HIGH {
+  color: #ff9900;
+  font-weight: 600;
+}
+
+.sev-MEDIUM {
+  color: #00ccff;
+}
+
+.sev-LOW {
+  color: #94a3b8;
+}
+
+
+/* ================================
+   CUSTOM SCROLLBAR
+================================ */
+
+#alertsTable tbody::-webkit-scrollbar {
+  width: 8px;
+}
+
+#alertsTable tbody::-webkit-scrollbar-thumb {
+  background: linear-gradient(#00ffff, #ff0080);
+  border-radius: 10px;
+}

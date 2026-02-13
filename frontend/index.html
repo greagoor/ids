@@ -11,7 +11,8 @@
   <!-- CSS -->
   <link rel="stylesheet" href="css/index.css">
   <link rel="stylesheet" href="css/charts.css">
-
+  <link rel="stylesheet" href="css/alerts.css">
+  <link rel="stylesheet" href="css/incidents.css">
 </head>
 
 <body>
@@ -21,11 +22,9 @@
     <source src="css/background.mp4" type="video/mp4">
   </video>
 
-  <!-- Soft dark overlay (light only for readability) -->
+  <!-- Overlay -->
   <div class="video-overlay"></div>
 
-
-  <!-- APP -->
   <div class="app">
 
     <!-- TOPBAR -->
@@ -47,13 +46,12 @@
       </div>
     </header>
 
-
     <!-- LAYOUT -->
     <div class="layout">
 
       <!-- SIDEBAR -->
       <aside class="sidebar">
-        <button data-view="charts" class="nav-btn active">Overview</button>
+        <button data-view="overview" class="nav-btn active">Overview</button>
         <button data-view="alerts" class="nav-btn">Alerts</button>
         <button data-view="incidents" class="nav-btn">Incidents</button>
       </aside>
@@ -61,39 +59,59 @@
       <!-- CONTENT -->
       <main class="content">
 
-        <!-- KPIs -->
-        <section class="kpi-row">
-          <div class="kpi-card">
-            <h4>Total Alerts</h4>
-            <p id="kpi-total">0</p>
-          </div>
+        <!-- ===================== -->
+        <!-- OVERVIEW SECTION      -->
+        <!-- ===================== -->
+        <section id="overview" class="view">
 
-          <div class="kpi-card">
-            <h4>High Severity</h4>
-            <p id="kpi-high">0</p>
-          </div>
+          <!-- KPIs -->
+          <section class="kpi-row">
 
-          <div class="kpi-card">
-            <h4>Successful Attacks</h4>
-            <p id="kpi-success">0</p>
-          </div>
+            <div class="kpi-card">
+              <h4>Total Alerts</h4>
+              <p id="kpi-total">0</p>
+            </div>
 
-          <div class="kpi-card">
-            <h4>Active Incidents</h4>
-            <p id="kpi-incidents">0</p>
-          </div>
+            <div class="kpi-card">
+              <h4>Active Incidents</h4>
+              <p id="kpi-incidents">0</p>
+            </div>
+
+            <div class="kpi-card">
+              <h4>Top Attacker (24h)</h4>
+              <p id="kpi-success">N/A</p>
+            </div>
+
+            <div class="kpi-card">
+              <h4>High Severity Alerts</h4>
+              <p id="kpi-high">0</p>
+            </div>
+
+          </section>
+
+          <!-- Charts -->
+          <section id="charts"></section>
+
         </section>
 
-        <!-- VIEWS -->
-        <section id="charts" class="view"></section>
+
+        <!-- ===================== -->
+        <!-- ALERTS SECTION        -->
+        <!-- ===================== -->
         <section id="alerts" class="view hidden"></section>
+
+
+        <!-- ===================== -->
+        <!-- INCIDENTS SECTION     -->
+        <!-- ===================== -->
         <section id="incidents" class="view hidden"></section>
 
+
+        <!-- MODAL -->
         <section id="modal"></section>
 
       </main>
     </div>
-
   </div>
 
   <!-- Scripts -->
@@ -113,6 +131,14 @@
       btn.addEventListener("click", () => {
         document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
+
+        const target = btn.dataset.view;
+
+        document.querySelectorAll(".view").forEach(v => {
+          v.classList.add("hidden");
+        });
+
+        document.getElementById(target).classList.remove("hidden");
       });
     });
   </script>

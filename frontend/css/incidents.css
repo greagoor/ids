@@ -1,0 +1,183 @@
+/* ================================
+   INCIDENTS SECTION WRAPPER
+================================ */
+
+#incidents {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeInInc 0.3s ease-in-out;
+}
+
+@keyframes fadeInInc {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ================================
+   TITLE
+================================ */
+
+#incidents h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ff4d6d;
+  letter-spacing: 1px;
+}
+
+
+/* ================================
+   FILTER PANEL
+================================ */
+
+#incidents .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 14px;
+
+  background: rgba(30, 10, 20, 0.7);
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255,0,80,0.25);
+  box-shadow: 0 0 25px rgba(255,0,80,0.08);
+}
+
+#incidents .filters label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+#incidents .filters select,
+#incidents .filters input {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #140914;
+  color: #ff4d6d;
+  border: 1px solid rgba(255,0,80,0.3);
+  border-radius: 8px;
+  outline: none;
+  transition: 0.2s;
+}
+
+#incidents .filters select:focus,
+#incidents .filters input:focus {
+  border-color: #ff4d6d;
+  box-shadow: 0 0 10px rgba(255,0,80,0.4);
+}
+
+
+/* ================================
+   INCIDENT TABLE
+================================ */
+
+#incidents {
+  overflow: hidden;
+}
+
+#incidents table,
+#incidents {
+  width: 100%;
+}
+
+#incidents {
+  border-radius: 14px;
+  background: rgba(25, 5, 15, 0.85);
+  box-shadow: 0 0 35px rgba(255,0,80,0.06);
+}
+
+#incidents thead {
+  background: rgba(255,0,80,0.12);
+}
+
+#incidents th {
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: #ff4d6d;
+  border-bottom: 1px solid rgba(255,0,80,0.25);
+}
+
+#incidents td {
+  padding: 12px;
+  font-size: 13px;
+  color: #f1f5f9;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+
+/* ================================
+   CLICKABLE INCIDENT ROWS
+================================ */
+
+.incident-row {
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.incident-row:hover {
+  background: rgba(255,0,80,0.08);
+  transform: scale(1.002);
+}
+
+
+/* ================================
+   SEVERITY COLOR STATES
+================================ */
+
+.sev-CRITICAL {
+  color: #ff0033;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255,0,0,0.5);
+}
+
+.sev-HIGH {
+  color: #ff8800;
+  font-weight: 600;
+}
+
+.sev-MEDIUM {
+  color: #00ccff;
+}
+
+.sev-LOW {
+  color: #94a3b8;
+}
+
+
+/* ================================
+   SCROLLABLE BODY
+================================ */
+
+#incidents tbody {
+  display: block;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+#incidents thead,
+#incidents tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+
+/* ================================
+   CUSTOM SCROLLBAR
+================================ */
+
+#incidents tbody::-webkit-scrollbar {
+  width: 8px;
+}
+
+#incidents tbody::-webkit-scrollbar-thumb {
+  background: linear-gradient(#ff4d6d, #ff0033);
+  border-radius: 10px;
+}

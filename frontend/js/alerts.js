@@ -43,7 +43,7 @@ let alertFilterState = {
 
 export async function loadAlerts() {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/alerts_last_24h?limit=800`,
+    `${SUPABASE_URL}/rest/v1/alerts_last_24h?limit=100`,
     {
       headers: {
         apikey: API_KEY,

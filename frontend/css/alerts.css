@@ -442,3 +442,41 @@
     0 0 15px rgba(0, 255, 255, 0.9),
     inset 0 0 15px rgba(0, 255, 255, 0.5);
 }
+/* ================================
+   COLUMN WIDTH ALIGNMENT FIX
+================================ */
+
+/* Compensate for scrollbar width in header */
+#alertsTable thead {
+  padding-right: 10px; /* matches scrollbar width */
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Use percentages so columns scale and always fit */
+#alertsTable th:nth-child(1),
+#alertsTable td:nth-child(1) { width: 14%; }   /* Time */
+
+#alertsTable th:nth-child(2),
+#alertsTable td:nth-child(2) { width: 16%; }   /* Attack */
+
+#alertsTable th:nth-child(3),
+#alertsTable td:nth-child(3) { width: 13%; }   /* Source IP */
+
+#alertsTable th:nth-child(4),
+#alertsTable td:nth-child(4) { width: 15%; }   /* Severity */
+
+#alertsTable th:nth-child(5),
+#alertsTable td:nth-child(5) { width: 20%; }   /* Confidence */
+
+#alertsTable th:nth-child(6),
+#alertsTable td:nth-child(6) { width: 37%; }   /* URI */
+
+/* Prevent URI text from breaking layout */
+#alertsTable td:nth-child(6) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0; /* required for ellipsis to work with table-layout: fixed */
+}

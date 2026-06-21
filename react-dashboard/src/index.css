@@ -1,0 +1,334 @@
+/* ── Theme Tokens ───────────────────────────────────────────────────── */
+/* Night Watch — Dark */
+[data-theme="dark"] {
+  --bg-base:        #05070d;
+  --bg-surface:     #0a0e1a;
+  --bg-elevated:    #0f1424;
+  --bg-glass:       rgba(15, 20, 36, 0.55);
+
+  --accent-cyan:    #00f0ff;
+  --accent-purple:  #a855f7;
+  --accent-danger:  #ff3860;
+  --accent-warning: #ff9f1c;
+  --accent-success: #00ff9d;
+
+  --text-primary:   #e8edf7;
+  --text-secondary: #8b95a8;
+  --text-muted:     #4a5268;
+
+  --border-glass:   rgba(255, 255, 255, 0.08);
+  --glow-intensity: 0.30;
+  --shadow-color:   rgba(0, 0, 0, 0.6);
+
+  --grid-color:     rgba(0, 240, 255, 0.04);
+  --noise-opacity:  0.03;
+  --scan-opacity:   0.03;
+}
+
+/* Daylight Ops — Light */
+[data-theme="light"] {
+  --bg-base:        #f4f1ea;
+  --bg-surface:     #fbf9f4;
+  --bg-elevated:    #ffffff;
+  --bg-glass:       rgba(255, 255, 255, 0.65);
+
+  --accent-cyan:    #0d7d8c;
+  --accent-purple:  #7c3aed;
+  --accent-danger:  #d6304a;
+  --accent-warning: #c2730a;
+  --accent-success: #1a8f5e;
+
+  --text-primary:   #1c2233;
+  --text-secondary: #54607a;
+  --text-muted:     #8b93a8;
+
+  --border-glass:   rgba(28, 34, 51, 0.10);
+  --glow-intensity: 0.12;
+  --shadow-color:   rgba(28, 34, 51, 0.12);
+
+  --grid-color:     rgba(180, 160, 120, 0.06);
+  --noise-opacity:  0.025;
+  --scan-opacity:   0.015;
+}
+
+/* ── Theme Transition ───────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease, box-shadow 280ms ease;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────── */
+/* Fonts loaded via index.html <link> tags (Orbitron, Inter, JetBrains Mono) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── Background ambient layer ───────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Background ambient glow blobs */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 20%, color-mix(in srgb, var(--accent-cyan) calc(var(--glow-intensity) * 30%), transparent) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 70%, color-mix(in srgb, var(--accent-purple) calc(var(--glow-intensity) * 25%), transparent) 0%, transparent 70%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent-cyan) 30%, transparent); }
+
+/* ── Glassmorphism card ─────────────────────────────────────────────── */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* HUD corner brackets */
+.hud-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.hud-card::before,
+.hud-card::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--accent-cyan);
+  border-style: solid;
+  opacity: 0.45;
+  transition: opacity 200ms ease, border-color 200ms ease;
+}
+.hud-card::before {
+  top: 0; left: 0;
+  border-width: 1.5px 0 0 1.5px;
+  border-radius: 2px 0 0 0;
+}
+.hud-card::after {
+  bottom: 0; right: 0;
+  border-width: 0 1.5px 1.5px 0;
+  border-radius: 0 0 2px 0;
+}
+.hud-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px var(--shadow-color), 0 0 24px color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+}
+.hud-card:hover::before,
+.hud-card:hover::after {
+  opacity: 0.9;
+}
+
+/* ── Severity / badge classes ───────────────────────────────────────── */
+.badge-critical {
+  background: color-mix(in srgb, var(--accent-danger) 15%, transparent);
+  color: var(--accent-danger);
+  border: 1px solid color-mix(in srgb, var(--accent-danger) 35%, transparent);
+}
+.badge-high {
+  background: color-mix(in srgb, var(--accent-warning) 15%, transparent);
+  color: var(--accent-warning);
+  border: 1px solid color-mix(in srgb, var(--accent-warning) 35%, transparent);
+}
+.badge-medium {
+  background: color-mix(in srgb, #eab308 15%, transparent);
+  color: #eab308;
+  border: 1px solid color-mix(in srgb, #eab308 35%, transparent);
+}
+.badge-low {
+  background: color-mix(in srgb, var(--accent-success) 15%, transparent);
+  color: var(--accent-success);
+  border: 1px solid color-mix(in srgb, var(--accent-success) 35%, transparent);
+}
+.badge-info {
+  background: color-mix(in srgb, var(--accent-cyan) 10%, transparent);
+  color: var(--accent-cyan);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 25%, transparent);
+}
+
+/* ── Verdict pills ──────────────────────────────────────────────────── */
+.verdict-critical  { color: var(--accent-danger); }
+.verdict-high      { color: var(--accent-warning); }
+.verdict-medium    { color: #eab308; }
+.verdict-suspicious{ color: var(--accent-purple); }
+.verdict-low       { color: var(--accent-success); }
+
+/* ── Live dot ───────────────────────────────────────────────────────── */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-success) 50%, transparent); }
+  50%       { opacity: 0.8; transform: scale(1.25); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-success) 0%, transparent); }
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent-success);
+  animation: live-pulse 1.8s ease-in-out infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── Glow hover ─────────────────────────────────────────────────────── */
+.glow-hover {
+  transition: box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
+}
+.glow-hover:hover {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent-cyan) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent-cyan) 25%, transparent);
+}
+
+/* ── Crosshair/reticle focus highlight ─────────────────────────────── */
+.reticle {
+  position: relative;
+}
+.reticle::before, .reticle::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--accent-cyan);
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  z-index: 10;
+}
+.reticle::before { top: -2px; left: -2px; border-width: 1.5px 0 0 1.5px; }
+.reticle::after  { bottom: -2px; right: -2px; border-width: 0 1.5px 1.5px 0; }
+.reticle:hover::before, .reticle:hover::after,
+.reticle:focus::before, .reticle:focus::after { opacity: 1; }
+
+/* ── Mono / code ────────────────────────────────────────────────────── */
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+/* ── Gradient text ──────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Attack type colors ─────────────────────────────────────────────── */
+.atk-sqli  { color: var(--accent-danger); }
+.atk-xss   { color: var(--accent-warning); }
+.atk-cmdi  { color: var(--accent-purple); }
+.atk-lfi   { color: var(--accent-success); }
+.atk-rfi   { color: var(--accent-cyan); }
+.atk-ssrf  { color: #f472b6; }
+.atk-path  { color: #fbbf24; }
+.atk-normal{ color: var(--text-muted); }
+
+/* ── Shadow cyber ───────────────────────────────────────────────────── */
+.shadow-cyber {
+  box-shadow: 0 0 30px color-mix(in srgb, var(--accent-cyan) 15%, transparent), 0 8px 32px var(--shadow-color);
+}
+
+/* ── New row flash ──────────────────────────────────────────────────── */
+.flash-new {
+  animation: newRow 1.5s ease-out forwards;
+}
+@keyframes newRow {
+  0%   { background-color: color-mix(in srgb, var(--accent-cyan) 14%, transparent); }
+  100% { background-color: transparent; }
+}
+
+/* ── Skeleton loading ───────────────────────────────────────────────── */
+.skeleton {
+  background: var(--border-glass);
+  border-radius: 6px;
+  animation: skeleton 1.5s ease-in-out infinite;
+}
+@keyframes skeleton {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.75; }
+}
+
+/* ── Sidebar transitions ────────────────────────────────────────────── */
+.sidebar-transition {
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Bottom ticker ──────────────────────────────────────────────────── */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-inner {
+  display: inline-block;
+  animation: ticker 80s linear infinite;
+}
+.ticker-inner:hover {
+  animation-play-state: paused;
+}
+
+/* ── Orbitron display class ─────────────────────────────────────────── */
+.font-display {
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* ── Page transition ────────────────────────────────────────────────── */
+.page-enter {
+  animation: slideUp 0.35s ease-out;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+.empty-state svg {
+  opacity: 0.25;
+}
+.empty-state p {
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 220px;
+  line-height: 1.6;
+}

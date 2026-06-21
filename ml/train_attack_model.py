@@ -10,8 +10,8 @@ import joblib
 df = pd.read_csv("dataset.csv", header=None)
 
 # Split features and labels
-X = df.iloc[:, 0:17]     # features
-y = df.iloc[:, 17]       # attack_type
+X = df.iloc[:, 0:20]     # features (now 20 columns)
+y = df.iloc[:, 20]       # attack_type
 
 # Train/test split
 X_train, X_test, y_train, y_test = train_test_split(
@@ -20,8 +20,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # Train model
 model = RandomForestClassifier(
-    n_estimators=200,
+    n_estimators=300,
     max_depth=None,
+    class_weight="balanced",
     random_state=42
 )
 

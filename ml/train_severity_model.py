@@ -10,10 +10,10 @@ import joblib
 df = pd.read_csv("dataset.csv", header=None)
 
 # Features
-X = df.iloc[:, 0:17]
+X = df.iloc[:, 0:20]   # features (now 20 columns)
 
 # Severity label
-y = df.iloc[:, 18]
+y = df.iloc[:, 21]
 
 # Train/test split
 X_train, X_test, y_train, y_test = train_test_split(

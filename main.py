@@ -7,6 +7,7 @@ from core.alert_builder import build_alert
 from output.stdout import emit
 from output.database import persist
 from cloud_db import expire_old_incidents
+from agents.detection_agent import enqueue_from_main  # additive agent wiring
 
 from core.scoring import calculate_confidence
 
@@ -42,16 +43,21 @@ def expiry_loop():
 
 threading.Thread(target=expiry_loop, daemon=True).start()
 
+print(
+    "[main.py] Bridged to agent_queue — new agent system will process alerts if running.",
+    flush=True,
+)
 
-# SQL detector commented for ML demo
+
+# All rule detectors active — sqli previously commented for ML demo, now restored
 DETECTORS = [
+    ("SQL_INJECTION",    sqli.detect),
     ("COMMAND_INJECTION", cmdi.detect),
-    # ("SQL_INJECTION", sqli.detect),
-    ("XSS", xss.detect),
-    ("LFI", lfi.detect),
-    ("PATH_TRAVERSAL", path_traversal.detect),
-    ("RFI", rfi.detect),
-    ("SSRF", ssrf.detect)
+    ("XSS",              xss.detect),
+    ("LFI",              lfi.detect),
+    ("PATH_TRAVERSAL",   path_traversal.detect),
+    ("RFI",              rfi.detect),
+    ("SSRF",             ssrf.detect)
 ]
 
 
@@ -97,13 +103,17 @@ for line in sys.stdin:
             "body": ""
         }
 
-        ml_result = predict(http_obj)
-
-        print("ML Result:", ml_result)
-
-        if ml_result["attack_confidence"] >= 50:
-            final_attack = ATTACK_LABELS[ml_result["attack_type"]]
-            final_indicators = ["ml_detected"]
+        try:
+            ml_result = predict(http_obj)
+            print("ML Result:", ml_result)
+            if ml_result["attack_confidence"] >= 50:
+                final_attack = ATTACK_LABELS[ml_result["attack_type"]]
+                final_indicators = ["ml_detected"]
+        except Exception as _ml_err:
+            # Old ml/predict has a feature mismatch (trained on 17 features,
+            # extractor now produces 20). Log and skip — do NOT crash the pipeline.
+            # The new suspicion_scorer in detection_agent is unaffected.
+            print(f"[main.py] ML fallback skipped (predict error): {_ml_err}", flush=True)
 
     # If still nothing detected → skip
     if not final_attack:
@@ -134,3 +144,10 @@ for line in sys.stdin:
 
     emit(alert)
     persist(alert)
+    try:
+        enqueue_from_main(alert)  # additive: push into agent pipeline (non-blocking)
+    except Exception as _e:
+        import logging as _log
+        _log.getLogger(__name__).warning(
+            "[main.py] enqueue_from_main failed (agent system may be offline): %s", _e
+        )

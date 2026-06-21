@@ -369,3 +369,31 @@
     0 0 15px rgba(255, 0, 85, 1),
     inset 0 0 15px rgba(255, 0, 85, 0.6);
 }
+
+
+/* ================================
+   COLUMN WIDTH ALIGNMENT FIX
+================================ */
+
+/* Compensate for scrollbar width in header */
+#incidents thead {
+  padding-right: 10px;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+#incidents th:nth-child(1),
+#incidents td:nth-child(1) { width: 22%; }   /* Attack */
+
+#incidents th:nth-child(2),
+#incidents td:nth-child(2) { width: 20%; }   /* Source IP */
+
+#incidents th:nth-child(3),
+#incidents td:nth-child(3) { width: 15%; }   /* Severity */
+
+#incidents th:nth-child(4),
+#incidents td:nth-child(4) { width: 13%; }   /* Alert Count */
+
+#incidents th:nth-child(5),
+#incidents td:nth-child(5) { width: 30%; }   /* Last Seen */

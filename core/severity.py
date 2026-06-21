@@ -1,26 +1,23 @@
-def severity_from_confidence(confidence, outcome):
-    if outcome == "LIKELY_SUCCESSFUL":
-        if confidence >= 80:
-            return "CRITICAL"
-        elif confidence >= 70:
-            return "HIGH"
-        else:
-            return "MEDIUM"
+"""
+core/severity.py — Severity calculation from confidence + outcome
 
-    # ATTEMPT
-    if confidence >= 60:
+Used by detection_agent to map confidence score → severity string.
+"""
+
+def severity_from_confidence(confidence: float, outcome: str = "ATTEMPT") -> str:
+    """
+    Map a numeric confidence (0–100) and HTTP outcome to a severity label.
+
+    Thresholds:
+      CRITICAL  → confidence >= 85 AND LIKELY_SUCCESSFUL
+      HIGH      → confidence >= 70
+      MEDIUM    → confidence >= 40
+      LOW       → below 40
+    """
+    if outcome == "LIKELY_SUCCESSFUL" and confidence >= 85:
+        return "CRITICAL"
+    if confidence >= 70:
         return "HIGH"
-    elif confidence >= 30:
+    if confidence >= 40:
         return "MEDIUM"
-    else:
-        return "LOW"
-
-SEVERITY_MAP = {
-    "LOW": 1,
-    "MEDIUM": 2,
-    "HIGH": 3,
-    "CRITICAL": 4
-}
-
-def severity_to_int(severity_str: str) -> int:
-    return SEVERITY_MAP.get(severity_str, 1)
+    return "LOW"

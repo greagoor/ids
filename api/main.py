@@ -56,6 +56,9 @@ app.add_middleware(
 from prevention.honeypot import router as honeypot_router
 app.include_router(honeypot_router)
 
+from api.routes.export import router as export_router
+app.include_router(export_router, prefix="/api")
+
 
 # ── Startup check ─────────────────────────────────────────────────────────────
 @app.on_event("startup")

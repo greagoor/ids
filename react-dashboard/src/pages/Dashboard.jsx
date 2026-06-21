@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { supabase } from '../lib/supabase'
-import { fetchAlerts } from '../lib/api'
+import { supabase, API_URL } from '../lib/supabase'
+import { fetchAlerts, SEVERITY_INT_MAP } from '../lib/api'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid
+  ResponsiveContainer, CartesianGrid, AreaChart, Area, Label
 } from 'recharts'
-import { AlertTriangle, Shield, Activity, Lock, Radio } from 'lucide-react'
+import { AlertTriangle, Shield, Activity, Lock, Radio, Download, FileText, FileJson, FileSpreadsheet } from 'lucide-react'
 
 // ── Theme-aware color helpers ────────────────────────────────────────
-const SEV_COLORS  = { CRITICAL:'var(--accent-danger)', HIGH:'var(--accent-warning)', MEDIUM:'#eab308', LOW:'var(--accent-success)' }
-const ATK_COLORS  = ['var(--accent-cyan)','var(--accent-purple)','var(--accent-warning)','var(--accent-success)','var(--accent-danger)','#f472b6','#fbbf24']
+const SEV_COLORS  = { CRITICAL:'var(--sev-critical)', HIGH:'var(--sev-high)', MEDIUM:'var(--sev-medium)', LOW:'var(--sev-low)' }
+const ATK_COLORS  = ['var(--accent-cyan)','var(--accent-purple)','color-mix(in srgb, var(--accent-cyan) 60%, transparent)','color-mix(in srgb, var(--accent-purple) 60%, transparent)','color-mix(in srgb, var(--accent-cyan) 30%, transparent)','color-mix(in srgb, var(--accent-purple) 30%, transparent)']
 
 // ── Sub-components ───────────────────────────────────────────────────
 function SeverityBadge({ severity = 'LOW' }) {
@@ -86,6 +86,7 @@ export default function Dashboard() {
   const [alerts,  setAlerts]  = useState([])
   const [loading, setLoading] = useState(true)
   const [newIds,  setNewIds]  = useState(new Set())
+  const [exportHours, setExportHours] = useState(0)
   const feedRef = useRef(null)
 
   // Initial load — same fetchAlerts call as before
@@ -110,15 +111,18 @@ export default function Dashboard() {
     return () => supabase.removeChannel(channel)
   }, [])
 
-  // Derived stats — identical calculation as before
+  // Derived stats — map severity integer to string
   const totalAlerts     = alerts.length
   const blocked         = alerts.filter(a => a.verdict === 'CRITICAL' || a.verdict === 'HIGH').length
   const avgConf         = alerts.length ? Math.round(alerts.reduce((s,a) => s+(a.confidence||0),0)/alerts.length) : 0
-  const activeIncidents = alerts.filter(a => a.severity === 'CRITICAL' || a.severity === 'HIGH').length
+  const activeIncidents = alerts.filter(a => {
+    const sev = SEVERITY_INT_MAP[a.severity] || a.severity
+    return sev === 'CRITICAL' || sev === 'HIGH'
+  }).length
 
-  // Severity distribution — same as before
+  // Severity distribution
   const severityData = ['CRITICAL','HIGH','MEDIUM','LOW'].map(s => ({
-    name: s, value: alerts.filter(a => a.severity === s).length
+    name: s, value: alerts.filter(a => (SEVERITY_INT_MAP[a.severity] || a.severity) === s).length
   })).filter(d => d.value > 0)
 
   // Attack type distribution — same as before
@@ -128,24 +132,86 @@ export default function Dashboard() {
     .sort((a,b) => b[1]-a[1]).slice(0,7)
     .map(([name,count]) => ({ name: name.replace('_',' '), count }))
 
-  // Suspicion histogram — same as before
-  const histogram = Array.from({length:10},(_,i)=>({ range:`${i*10}–${i*10+10}`, count:0 }))
+  // Suspicion histogram (ignore nulls, 5 buckets)
+  const histogram = [
+    { range: '0.0–0.2', count: 0 },
+    { range: '0.2–0.4', count: 0 },
+    { range: '0.4–0.6', count: 0 },
+    { range: '0.6–0.8', count: 0 },
+    { range: '0.8–1.0', count: 0 },
+  ]
   alerts.forEach(a => {
-    const s = a.suspicion_score || 0
-    const b = Math.min(Math.floor(s*10),9)
-    histogram[b].count++
+    if (a.suspicion_score === null || a.suspicion_score === undefined) return
+    const s = Math.max(0, Math.min(0.999, a.suspicion_score)) // Clamp 0 to 0.999
+    const bucket = Math.floor(s * 5)
+    histogram[bucket].count++
   })
+
+  const getFilteredAlerts = () => {
+    if (exportHours === 0) return alerts
+    const cutoff = new Date(Date.now() - exportHours * 3600 * 1000)
+    return alerts.filter(a => new Date(a.timestamp) >= cutoff)
+  }
+
+  const exportJson = () => {
+    const data = getFilteredAlerts()
+    if(!data.length) return
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2))
+    const a = document.createElement('a')
+    a.href = dataStr
+    a.download = "alerts_export.json"
+    a.click()
+  }
+
+  const exportCsv = () => {
+    const data = getFilteredAlerts()
+    if(!data.length) return
+    const keys = Object.keys(data[0])
+    const csvStr = [
+      keys.join(','),
+      ...data.map(a => keys.map(k => `"${(a[k]||'').toString().replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+    const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvStr)
+    const a = document.createElement('a')
+    a.href = dataStr
+    a.download = "alerts_export.csv"
+    a.click()
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-display font-bold gradient-text tracking-wider">
-          Security Operations Center
-        </h1>
-        <p className="text-xs mt-1.5" style={{color:'var(--text-muted)'}}>
-          Live threat monitoring · Powered by Agentic AI
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-display font-bold gradient-text tracking-wider">
+            Security Operations Center
+          </h1>
+          <p className="text-xs mt-1.5" style={{color:'var(--text-muted)'}}>
+            Live threat monitoring · Powered by Agentic AI
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select value={exportHours} onChange={(e) => setExportHours(Number(e.target.value))} 
+            className="rounded-lg px-2 py-1.5 text-[10px] focus:outline-none"
+            style={{background:'var(--bg-elevated)', border:'1px solid var(--border-glass)', color:'var(--text-secondary)'}}>
+            <option value={0}>All Time</option>
+            <option value={24}>Last 24h</option>
+            <option value={168}>Last 7d</option>
+          </select>
+          <button onClick={exportJson} className="reticle flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-display font-semibold tracking-wider transition-all"
+            style={{background:'var(--bg-glass)', border:'1px solid var(--border-glass)', color:'var(--text-secondary)'}}>
+            <FileJson size={12}/> JSON
+          </button>
+          <button onClick={exportCsv} className="reticle flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-display font-semibold tracking-wider transition-all"
+            style={{background:'var(--bg-glass)', border:'1px solid var(--border-glass)', color:'var(--text-secondary)'}}>
+            <FileSpreadsheet size={12}/> CSV
+          </button>
+          <a href={`${API_URL}/api/export/pdf`} target="_blank" rel="noreferrer"
+            className="reticle flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-display font-semibold tracking-wider transition-all"
+            style={{background:'color-mix(in srgb, var(--accent-cyan) 15%, transparent)', border:'1px solid color-mix(in srgb, var(--accent-cyan) 30%, transparent)', color:'var(--accent-cyan)'}}>
+            <FileText size={12}/> PDF REPORT
+          </a>
+        </div>
       </div>
 
       {/* KPI cards — asymmetric: 4 small + 1 LIVE feed dominant below */}
@@ -171,12 +237,12 @@ export default function Dashboard() {
           </p>
           {attackData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={attackData} margin={{top:0,right:0,left:-20,bottom:0}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-glass)" />
-                <XAxis dataKey="name" tick={{fontSize:10, fill:'var(--text-muted)', fontFamily:'Inter'}} />
-                <YAxis tick={{fontSize:10, fill:'var(--text-muted)'}} />
-                <Tooltip content={<ChartTooltip/>} />
-                <Bar dataKey="count" radius={[4,4,0,0]}>
+              <BarChart data={attackData} layout="vertical" margin={{top:0,right:30,left:40,bottom:0}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-glass)" horizontal={true} vertical={false} />
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="name" tick={{fontSize:10, fill:'var(--text-primary)', fontFamily:'Inter'}} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip/>} cursor={{fill: 'var(--bg-glass)'}} />
+                <Bar dataKey="count" radius={[0,4,4,0]} barSize={16}>
                   {attackData.map((_,i) => <Cell key={i} fill={ATK_COLORS[i%ATK_COLORS.length]} />)}
                 </Bar>
               </BarChart>
@@ -191,7 +257,7 @@ export default function Dashboard() {
         </div>
 
         {/* Severity donut — 1 col */}
-        <div className="hud-card p-6 flex flex-col">
+        <div className="hud-card p-6 flex flex-col relative">
           <p className="text-[10px] font-display font-semibold tracking-widest mb-4" style={{color:'var(--text-muted)'}}>
             SEVERITY BREAKDOWN
           </p>
@@ -199,15 +265,21 @@ export default function Dashboard() {
             <>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
-                  <Pie data={severityData} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={3}>
+                  <Pie data={severityData} dataKey="value" cx="50%" cy="50%" innerRadius={60} outerRadius={75} paddingAngle={2} stroke="none">
                     {severityData.map((entry,i) => (
                       <Cell key={i} fill={SEV_COLORS[entry.name] || 'var(--text-muted)'} />
                     ))}
+                    <Label 
+                      value={totalAlerts} 
+                      position="center" 
+                      fill="var(--text-primary)" 
+                      style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'Inter' }} 
+                    />
                   </Pie>
-                  <Tooltip content={<ChartTooltip/>} />
+                  <Tooltip content={<ChartTooltip/>} cursor={{fill: 'transparent'}} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3">
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 justify-center">
                 {severityData.map(d => (
                   <div key={d.name} className="flex items-center gap-1.5 text-[10px]" style={{color:'var(--text-secondary)'}}>
                     <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{background: SEV_COLORS[d.name]}} />
@@ -231,12 +303,19 @@ export default function Dashboard() {
           ML SUSPICION SCORE DISTRIBUTION
         </p>
         <ResponsiveContainer width="100%" height={90}>
-          <BarChart data={histogram} margin={{top:0,right:0,left:-30,bottom:0}}>
-            <XAxis dataKey="range" tick={{fontSize:9, fill:'var(--text-muted)'}} />
-            <YAxis tick={{fontSize:9, fill:'var(--text-muted)'}} />
-            <Tooltip content={<ChartTooltip/>} />
-            <Bar dataKey="count" fill="var(--accent-cyan)" radius={[3,3,0,0]} opacity={0.85} />
-          </BarChart>
+          <AreaChart data={histogram} margin={{top:10,right:0,left:-30,bottom:0}}>
+            <defs>
+              <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--accent-cyan)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--accent-cyan)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-glass)" vertical={false} />
+            <XAxis dataKey="range" tick={{fontSize:9, fill:'var(--text-muted)'}} axisLine={false} tickLine={false} />
+            <YAxis tick={{fontSize:9, fill:'var(--text-muted)'}} axisLine={false} tickLine={false} />
+            <Tooltip content={<ChartTooltip/>} cursor={{stroke: 'var(--accent-cyan)', strokeWidth: 1, strokeDasharray: '3 3'}} />
+            <Area type="monotone" dataKey="count" stroke="var(--accent-cyan)" fillOpacity={1} fill="url(#colorCount)" strokeWidth={2} />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 
@@ -274,7 +353,7 @@ export default function Dashboard() {
                   border: '1px solid var(--border-glass)',
                 }}
               >
-                <SeverityBadge severity={alert.severity} />
+                <SeverityBadge severity={SEVERITY_INT_MAP[alert.severity] || alert.severity} />
                 <span className="mono font-medium w-28 truncate flex-shrink-0" style={{color:'var(--text-primary)'}}>
                   {alert.ip || alert.src_ip}
                 </span>

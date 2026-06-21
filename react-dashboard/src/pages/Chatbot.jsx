@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { sendChat } from '../lib/api'
-import { Send, Bot, User, MessageSquare } from 'lucide-react'
+import { Send, Bot, User, MessageSquare, Info } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 const STARTER_QUESTIONS = [
   'Why was IP flagged for SQL injection?',
@@ -30,7 +31,7 @@ function Message({ msg }) {
       </div>
       <div className={`max-w-[80%] flex flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
         <div
-          className={`px-4 py-3 text-sm leading-relaxed ${isUser ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl rounded-tl-sm'}`}
+          className={`px-4 py-3 text-sm leading-relaxed markdown-body ${isUser ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl rounded-tl-sm'}`}
           style={{
             background: isUser
               ? 'color-mix(in srgb, var(--accent-purple) 12%, var(--bg-elevated))'
@@ -40,7 +41,7 @@ function Message({ msg }) {
             color: 'var(--text-primary)',
           }}
         >
-          {msg.content}
+          <ReactMarkdown>{msg.content}</ReactMarkdown>
         </div>
         {msg.sources?.length > 0 && (
           <div className="flex flex-wrap gap-1 px-1">
@@ -63,20 +64,23 @@ function Message({ msg }) {
 }
 
 export default function Chatbot() {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
+  const [messages, setMessages] = useState(() => {
+    const saved = sessionStorage.getItem('chat_messages')
+    if (saved) return JSON.parse(saved)
+    return [{
+      role: "assistant",
       content: "Hello! I'm your SOC AI assistant. Ask me anything about alerts, incidents, or threat intelligence. I only use data from the live knowledge base — no hallucinations.",
       sources: []
-    }
-  ])
+    }]
+  })
   const [input,   setInput]   = useState('')
-  const [role,    setRole]    = useState('junior')
+  const [role]    = useState('analyst')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    sessionStorage.setItem('chat_messages', JSON.stringify(messages))
   }, [messages])
 
   // Same send logic as original
@@ -119,29 +123,7 @@ export default function Chatbot() {
             Grounded on live Supabase knowledge base · No hallucinations
           </p>
         </div>
-        {/* Role toggle */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
-          style={{background:'var(--bg-glass)', border:'1px solid var(--border-glass)'}}>
-          <span className="text-[10px] font-display tracking-widest" style={{color:'var(--text-muted)'}}>ROLE:</span>
-          {['junior','senior'].map(r => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              className="text-[10px] px-3 py-1 rounded font-display font-semibold tracking-wider transition-all"
-              style={{
-                background: role === r
-                  ? 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)'
-                  : 'transparent',
-                color: role === r ? 'var(--accent-cyan)' : 'var(--text-muted)',
-                border: `1px solid ${role === r
-                  ? 'color-mix(in srgb, var(--accent-cyan) 25%, transparent)'
-                  : 'transparent'}`,
-              }}
-            >
-              {r.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {/* Role toggle removed as per request */}
       </div>
 
       {/* Starter question chips */}

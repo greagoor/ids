@@ -317,29 +317,13 @@ def run_detection(
 def enqueue_from_main(alert: dict) -> None:
     """
     Called additively from main.py after its full detection pipeline.
-
-    Design contract:
-      - main.py already ran: decode_uri, rule detectors, old ML predict(),
-        calculate_confidence, build_alert, persist() (writes alerts + incidents).
-      - This function does ONLY the NEW work not present in main.py:
-          1. Blocklist fast-path check
-          2. suspicion_scorer  (new model, different from predict())
-          3. payload_scorer
-          4. session_tracker   (behavioral sliding window)
-          5. MITRE + kill_chain tagging
-          6. Fusion verdict
-          7. agent_queue INSERT  (routes to pretriage or response agent)
-          8. audit_log INSERT
-      - Does NOT call save_alert() or upsert_incident() — persist() already did.
-      - Runs in a daemon thread so main.py's stdin loop is never blocked.
+    Runs synchronously to avoid Supabase cross-thread client collisions.
     """
-    def _run():
-        try:
-            _bridge_pipeline(alert)
-        except Exception as e:
-            logger.error("enqueue_from_main background thread failed: %s", e)
-
-    threading.Thread(target=_run, daemon=True).start()
+    try:
+        _bridge_pipeline(alert)
+    except Exception as e:
+        print(f"ERROR in enqueue_from_main: {e}", flush=True)
+        logger.error("enqueue_from_main failed: %s", e)
 
 
 def _bridge_pipeline(pre_alert: dict) -> None:
@@ -355,6 +339,7 @@ def _bridge_pipeline(pre_alert: dict) -> None:
     method        = pre_alert.get("method", "GET")
     response_code = str(pre_alert.get("response_code", ""))
     outcome       = pre_alert.get("outcome", "ATTEMPT")
+    source        = pre_alert.get("source", "tshark")
     # main.py's already-computed rule/ML result — use as rule_match
     rule_match    = pre_alert.get("attack_type")
     confidence    = pre_alert.get("confidence", 0)
@@ -462,14 +447,21 @@ def _bridge_pipeline(pre_alert: dict) -> None:
 
     # ── 8. Write to agent_queue + audit_log ──────────────────────────────────
     try:
-        from cloud_db import write_to_queue, update_agent_status, write_audit_log
+        from cloud_db import write_to_queue, update_agent_status, write_audit_log, update_alert
         update_agent_status(AGENT_NAME, "BUSY", alert_id)
+
+        # Route all non-blocklisted alerts through the AI triage system
+        if blocklisted:
+            queue_receiver = "response_agent"
+
+        if rule_match == "COMMAND_INJECTION" or confidence > 95:
+            queue_receiver = "response_agent"
 
         if source == "honeypot":
             queue_receiver = "honeypot_agent"
 
         priority = "HIGH" if verdict in ("CRITICAL", "HIGH") else "MEDIUM"
-        write_to_queue(
+        res_q = write_to_queue(
             sender   = AGENT_NAME,
             receiver = queue_receiver,
             payload  = {k: v for k, v in enriched.items()
@@ -477,6 +469,7 @@ def _bridge_pipeline(pre_alert: dict) -> None:
             alert_id = alert_id,
             priority = priority,
         )
+        print(f"WRITE TO QUEUE RESULT: {res_q}", flush=True)
         write_audit_log(
             agent     = AGENT_NAME,
             action    = "ALERT_DETECTED",
@@ -489,8 +482,16 @@ def _bridge_pipeline(pre_alert: dict) -> None:
                 "ml_score": ml_score, "source": "tshark",
                 "blocklisted": blocklisted,
             },
-            alert_id = alert_id,
+            alert_id  = alert_id,
         )
+        
+        update_alert(alert_id, {
+            "suspicion_score": ml_score,
+            "shap_features": shap_features,
+            "verdict": verdict,
+            "ml_score": ml_score
+        })
+        
         update_agent_status(AGENT_NAME, "IDLE")
     except Exception as e:
         logger.error("agent_queue write failed: %s", e)

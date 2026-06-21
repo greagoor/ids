@@ -185,7 +185,10 @@ export default function Layout() {
       setSimResult({ error: e.message })
     }
     setSimLoading(false)
-    setTimeout(() => navigate('/agents'), 800)
+    setTimeout(() => {
+      setSimOpen(false)
+      navigate('/agents')
+    }, 1500)
   }
 
   return (
@@ -325,8 +328,10 @@ export default function Layout() {
             </button>
 
             {simOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 glass p-4 z-50 shadow-cyber animate-slide-in">
-                <p className="text-[10px] mb-3 font-display font-semibold tracking-widest"
+              <>
+                <div className="fixed inset-0 z-[998]" onClick={() => setSimOpen(false)} />
+                <div className="fixed right-6 top-16 w-64 glass p-4 z-[999] shadow-cyber animate-slide-in">
+                  <p className="text-[10px] mb-3 font-display font-semibold tracking-widest"
                   style={{color:'var(--text-muted)'}}>DEMO MODE — FIRE ATTACK</p>
                 <select
                   value={simType}
@@ -363,6 +368,7 @@ export default function Layout() {
                   </div>
                 )}
               </div>
+              </>
             )}
           </div>
 

@@ -1,15 +1,22 @@
 /**
- * lib/api.js — Direct Supabase queries (no FastAPI dependency)
+ * lib/api.js — Direct Supabase queries
  *
- * Previously routed through http://localhost:8000 (FastAPI).
- * Now uses the supabase-js client directly so the dashboard works
- * with only the Vite dev server running.
- *
- * Realtime subscriptions in each page component remain unchanged —
- * they already use the same supabase client.
+ * FIX NOTES (2026-06-21):
+ *  - fetchModelMetrics: was querying audit_log, now queries model_metrics table
+ *  - fetchHoneypotLogs: was querying audit_log, now queries honeypot_logs table
+ *  - fetchBlocklist: was querying audit_log BLOCK actions, now queries blocklist_cache
+ *  - severity in alerts is an INTEGER (1=LOW, 2=MEDIUM, 3=HIGH, 4=CRITICAL) not a string
  */
 
 import { supabase } from './supabase'
+
+// ── Severity integer→string mapping (DB stores 1-4, not strings) ─────────────
+export const SEVERITY_INT_MAP = {
+  1: 'LOW',
+  2: 'MEDIUM',
+  3: 'HIGH',
+  4: 'CRITICAL',
+}
 
 // ── Alerts ───────────────────────────────────────────────────────────────────
 export async function fetchAlerts(limit = 50) {
@@ -18,7 +25,7 @@ export async function fetchAlerts(limit = 50) {
     .select('*')
     .order('timestamp', { ascending: false })
     .limit(limit)
-  return result   // { data, error } — same shape pages expect
+  return result
 }
 
 // ── Incidents ────────────────────────────────────────────────────────────────
@@ -55,36 +62,50 @@ export async function fetchSystemHealth() {
   return { data: { total_agents: (data||[]).length, healthy, error_agents: (data||[]).length - healthy }, error: null }
 }
 
-// ── Model metrics (from audit_log aggregation) ────────────────────────────────
+// ── Model metrics — reads from model_metrics table (NOT audit_log) ────────────
 export async function fetchModelMetrics() {
   return supabase
-    .from('audit_log')
-    .select('action, metadata, timestamp')
-    .order('timestamp', { ascending: false })
-    .limit(500)
+    .from('model_metrics')
+    .select('id, timestamp, accuracy, precision_score, recall_score, f1_score, drift_detected')
+    .order('timestamp', { ascending: true })
+    .limit(100)
 }
 
-// ── Honeypot logs ─────────────────────────────────────────────────────────────
+// ── Honeypot logs — reads from honeypot_logs table (NOT audit_log) ────────────
 export async function fetchHoneypotLogs(limit = 100) {
   return supabase
-    .from('audit_log')
+    .from('honeypot_logs')
     .select('*')
-    .eq('agent', 'honeypot_agent')
     .order('timestamp', { ascending: false })
     .limit(limit)
 }
 
-// ── Blocklist (from incidents + audit_log BLOCK actions) ──────────────────────
+// ── Blocklist — reads from blocklist_cache table ──────────────────────────────
 export async function fetchBlocklist() {
   return supabase
-    .from('audit_log')
-    .select('alert_id, reasoning, metadata, timestamp')
-    .in('action', ['BLOCK', 'BLOCK_MOCK', 'BLOCK_REFUSED'])
-    .order('timestamp', { ascending: false })
+    .from('blocklist_cache')
+    .select('ip, source, score, blocked_until, created_at')
+    .order('created_at', { ascending: false })
     .limit(100)
 }
 
-// ── Feedback (stub — no direct table without FastAPI) ─────────────────────────
+// ── Investigation report for a specific alert_uuid ────────────────────────────
+// The alerts table does NOT have investigation_verdict/shap_features columns.
+// They live in audit_log.metadata (agent=investigation_agent) keyed by alert_id.
+export async function fetchInvestigationForAlert(alertUuid) {
+  if (!alertUuid) return { data: null, error: null }
+  const { data, error } = await supabase
+    .from('audit_log')
+    .select('reasoning, metadata, timestamp')
+    .eq('agent', 'investigation_agent')
+    .eq('alert_id', alertUuid)
+    .order('timestamp', { ascending: false })
+    .limit(1)
+  if (error || !data || data.length === 0) return { data: null, error }
+  return { data: data[0], error: null }
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────────────
 export async function sendFeedback({ alertId, analyst, verdict, notes }) {
   return supabase.from('audit_log').insert({
     agent: 'analyst',
@@ -101,16 +122,15 @@ export async function sendChat({ query, analystRole }) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, analyst_role: analystRole })
-  });
+  })
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+    throw new Error(`HTTP ${response.status}`)
   }
-  return await response.json();
+  return await response.json()
 }
 
-// ── Simulate attack via _bridge_pipeline (stub — returns dummy for demo) ──────
+// ── Simulate attack ───────────────────────────────────────────────────────────
 export async function simulateAttack(attackType) {
-  // Without FastAPI, insert a direct audit_log row as a demo event
   const demoAlert = {
     agent: 'detection_agent',
     action: 'ALERT_DETECTED',
@@ -121,7 +141,7 @@ export async function simulateAttack(attackType) {
   return supabase.from('audit_log').insert(demoAlert)
 }
 
-// ── Ingest trigger stub ───────────────────────────────────────────────────────
+// ── Ingest trigger ────────────────────────────────────────────────────────────
 export async function triggerIngest() {
   return { data: { status: 'ingest requires FastAPI server on port 8000' }, error: null }
 }

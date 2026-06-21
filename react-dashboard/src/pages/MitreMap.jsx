@@ -60,7 +60,7 @@ export default function MitreMap() {
       .attr('fill', isDark ? '#05070d' : '#f4f1ea')
 
     const colorScale = d3.scaleSequential(
-      d3.interpolateRgb(isDark ? '#1e3a5f' : '#b8d4d8', isDark ? '#00f0ff' : '#0d7d8c')
+      d3.interpolateRgb(isDark ? '#00D4FF' : '#0090cc', isDark ? '#7C3AED' : '#5b21b6')
     ).domain([0, maxCount])
 
     const tooltip = d3.select('body').append('div')
@@ -169,7 +169,7 @@ export default function MitreMap() {
             <div key={id}
               className="reticle flex items-center gap-3 text-xs px-3 py-2.5 rounded-lg transition-colors"
               style={{borderRadius:8}}
-              onMouseEnter={e => e.currentTarget.style.background='color-mix(in srgb, var(--accent-cyan) 4%, transparent)'}
+              onMouseEnter={e => e.currentTarget.style.background='color-mix(in srgb, var(--accent-cyan) 6%, transparent)'}
               onMouseLeave={e => e.currentTarget.style.background='transparent'}>
               <span className="mono font-semibold w-24 flex-shrink-0" style={{color:'var(--accent-cyan)'}}>
                 {id}

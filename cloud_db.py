@@ -30,13 +30,16 @@ if not _SUPABASE_URL or not _SUPABASE_KEY:
         "Fill these in .env before running the agent system."
     )
 
-supabase: Client = create_client(_SUPABASE_URL, _SUPABASE_KEY) if (_SUPABASE_URL and _SUPABASE_KEY) else None  # type: ignore
+import threading
+_local = threading.local()
 
 def _db() -> Client:
-    """Return the Supabase client, raising clearly if not configured."""
-    if supabase is None:
+    """Return a thread-local Supabase client."""
+    if not _SUPABASE_URL or not _SUPABASE_KEY:
         raise RuntimeError("Supabase client not initialised — set SUPABASE_URL and SUPABASE_KEY in .env")
-    return supabase
+    if not hasattr(_local, "client"):
+        _local.client = create_client(_SUPABASE_URL, _SUPABASE_KEY)
+    return _local.client
 
 
 import time as _time
@@ -60,6 +63,7 @@ def _safe_exec(fn, retries: int = 3, backoff: float = 0.2):
                 )
                 _time.sleep(backoff * (attempt + 1))   # linear backoff
                 continue
+            print(f"Supabase ERROR: {e}", flush=True)
             logger.error("Supabase error: %s", e)
             return None
 
@@ -114,6 +118,20 @@ def save_alert(alert: dict) -> None:
     row = {k: v for k, v in row.items() if v is not None}
 
     _safe_exec(lambda: _db().table("alerts").insert(row).execute())
+
+def update_alert(alert_uuid: str, updates: dict) -> None:
+    """Update an existing alert row by UUID."""
+    # Ensure severity is updated as an integer if provided
+    if "severity" in updates:
+        updates["severity"] = _sev_int(updates["severity"])
+    
+    _safe_exec(
+        lambda: _db()
+        .table("alerts")
+        .update(updates)
+        .eq("alert_uuid", alert_uuid)
+        .execute()
+    )
 
 
 def upsert_incident(alert: dict) -> None:

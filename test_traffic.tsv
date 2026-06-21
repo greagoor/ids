@@ -1,0 +1,3 @@
+192.168.1.100	GET	http://localhost/	200
+192.168.1.101	GET	http://localhost/about.html	200
+192.168.1.102	GET	http://localhost/product?id=1'%20OR%20'1'='1	404

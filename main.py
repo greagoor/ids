@@ -34,12 +34,23 @@ import time
 import threading
 
 
+from cloud_db import update_agent_status
+
 def expiry_loop():
+    # Initial startup heartbeat
+    try:
+        update_agent_status("detection_agent", "IDLE")
+    except Exception:
+        pass
+        
     while True:
         expire_old_incidents()
         decay_incident_severity()
+        try:
+            update_agent_status("detection_agent", "IDLE")
+        except Exception:
+            pass
         time.sleep(60)
-
 
 threading.Thread(target=expiry_loop, daemon=True).start()
 
@@ -68,10 +79,6 @@ for line in sys.stdin:
         continue
 
     decoded = decode_uri(parsed["uri"])
-
-    print("RAW URI:", parsed["uri"])
-    print("DECODED URI:", decoded)
-
     outcome = classify_outcome(parsed["response_code"])
 
     # ----------------------------
@@ -83,8 +90,6 @@ for line in sys.stdin:
 
     for attack_type, detector in DETECTORS:
         detected, indicators = detector(decoded)
-        print("Checking:", attack_type, "→", detected)
-
         if detected:
             rule_detected = True
             final_attack = attack_type
@@ -95,29 +100,26 @@ for line in sys.stdin:
     # 2️⃣ ML FALLBACK IF RULE MISSED
     # ----------------------------
     if not rule_detected:
-
         http_obj = {
             "method": parsed["method"],
             "url": parsed["uri"].split("?")[0],
             "query": parsed["uri"].split("?")[1] if "?" in parsed["uri"] else "",
             "body": ""
         }
-
         try:
             ml_result = predict(http_obj)
-            print("ML Result:", ml_result)
             if ml_result["attack_confidence"] >= 50:
                 final_attack = ATTACK_LABELS[ml_result["attack_type"]]
                 final_indicators = ["ml_detected"]
-        except Exception as _ml_err:
-            # Old ml/predict has a feature mismatch (trained on 17 features,
-            # extractor now produces 20). Log and skip — do NOT crash the pipeline.
-            # The new suspicion_scorer in detection_agent is unaffected.
-            print(f"[main.py] ML fallback skipped (predict error): {_ml_err}", flush=True)
+        except Exception:
+            # Old ml/predict feature mismatch. Skip silently.
+            pass
 
     # If still nothing detected → skip
     if not final_attack:
         continue
+        
+    print(f"[main.py] Alert detected via {final_attack}! Queueing to Agent System...", flush=True)
 
     # ----------------------------
     # 3️⃣ CONTINUE EXISTING PIPELINE

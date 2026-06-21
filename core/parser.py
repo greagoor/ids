@@ -6,7 +6,8 @@ def parse_line(line: str):
     Expected fields:
     ip.src, http.method, http.request.full_uri, http.response.code
     """
-    parts = re.split(r"[\t\\]", line.strip())
+    # Split ONLY on tabs, ignore backslashes. strip('\n\r') instead of strip() to keep leading/trailing spaces if any
+    parts = line.rstrip('\n\r').split('\t')
 
     if len(parts) < 3:
         return None

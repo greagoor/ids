@@ -1,0 +1,12 @@
+import subprocess, time
+p1 = subprocess.Popen(['python', '-m', 'http.server', '80'])
+time.sleep(2)
+p2 = subprocess.Popen(['tshark', '-i', '9', '-Y', 'http.request', '-T', 'fields', '-e', 'ip.src', '-e', 'http.request.method', '-e', 'http.request.full_uri', '-e', 'http.response.code', '-E', 'separator=\t', '-E', 'occurrence=f', '-l'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+time.sleep(1)
+subprocess.run(['curl.exe', '-s', 'http://127.0.0.1/?id=1''%20OR%20''1''=''1'])
+time.sleep(2)
+p2.terminate()
+p1.terminate()
+out, err = p2.communicate()
+print('STDOUT:', repr(out))
+print('STDERR:', repr(err))

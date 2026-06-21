@@ -6,11 +6,16 @@
   --bg-elevated:    #0f1424;
   --bg-glass:       rgba(15, 20, 36, 0.55);
 
-  --accent-cyan:    #00f0ff;
-  --accent-purple:  #a855f7;
-  --accent-danger:  #ff3860;
-  --accent-warning: #ff9f1c;
-  --accent-success: #00ff9d;
+  --accent-cyan:    #00D4FF;
+  --accent-purple:  #7C3AED;
+  --accent-danger:  #FF5252;
+  --accent-warning: #FFB300;
+  --accent-success: #00C853;
+
+  --sev-critical:   #e11d48;
+  --sev-high:       #a855f7;
+  --sev-medium:     #06b6d4;
+  --sev-low:        #64748b;
 
   --text-primary:   #e8edf7;
   --text-secondary: #8b95a8;
@@ -32,11 +37,16 @@
   --bg-elevated:    #ffffff;
   --bg-glass:       rgba(255, 255, 255, 0.65);
 
-  --accent-cyan:    #0d7d8c;
-  --accent-purple:  #7c3aed;
-  --accent-danger:  #d6304a;
-  --accent-warning: #c2730a;
-  --accent-success: #1a8f5e;
+  --accent-cyan:    #00D4FF;
+  --accent-purple:  #7C3AED;
+  --accent-danger:  #FF5252;
+  --accent-warning: #FFB300;
+  --accent-success: #00C853;
+
+  --sev-critical:   #be123c;
+  --sev-high:       #7e22ce;
+  --sev-medium:     #0e7490;
+  --sev-low:        #475569;
 
   --text-primary:   #1c2233;
   --text-secondary: #54607a;
@@ -163,24 +173,24 @@ body::after {
 
 /* ── Severity / badge classes ───────────────────────────────────────── */
 .badge-critical {
-  background: color-mix(in srgb, var(--accent-danger) 15%, transparent);
-  color: var(--accent-danger);
-  border: 1px solid color-mix(in srgb, var(--accent-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--sev-critical) 15%, transparent);
+  color: var(--sev-critical);
+  border: 1px solid color-mix(in srgb, var(--sev-critical) 35%, transparent);
 }
 .badge-high {
-  background: color-mix(in srgb, var(--accent-warning) 15%, transparent);
-  color: var(--accent-warning);
-  border: 1px solid color-mix(in srgb, var(--accent-warning) 35%, transparent);
+  background: color-mix(in srgb, var(--sev-high) 15%, transparent);
+  color: var(--sev-high);
+  border: 1px solid color-mix(in srgb, var(--sev-high) 35%, transparent);
 }
 .badge-medium {
-  background: color-mix(in srgb, #eab308 15%, transparent);
-  color: #eab308;
-  border: 1px solid color-mix(in srgb, #eab308 35%, transparent);
+  background: color-mix(in srgb, var(--sev-medium) 15%, transparent);
+  color: var(--sev-medium);
+  border: 1px solid color-mix(in srgb, var(--sev-medium) 35%, transparent);
 }
 .badge-low {
-  background: color-mix(in srgb, var(--accent-success) 15%, transparent);
-  color: var(--accent-success);
-  border: 1px solid color-mix(in srgb, var(--accent-success) 35%, transparent);
+  background: color-mix(in srgb, var(--sev-low) 15%, transparent);
+  color: var(--sev-low);
+  border: 1px solid color-mix(in srgb, var(--sev-low) 35%, transparent);
 }
 .badge-info {
   background: color-mix(in srgb, var(--accent-cyan) 10%, transparent);
@@ -189,11 +199,11 @@ body::after {
 }
 
 /* ── Verdict pills ──────────────────────────────────────────────────── */
-.verdict-critical  { color: var(--accent-danger); }
-.verdict-high      { color: var(--accent-warning); }
-.verdict-medium    { color: #eab308; }
+.verdict-critical  { color: var(--sev-critical); }
+.verdict-high      { color: var(--sev-high); }
+.verdict-medium    { color: var(--sev-medium); }
 .verdict-suspicious{ color: var(--accent-purple); }
-.verdict-low       { color: var(--accent-success); }
+.verdict-low       { color: var(--sev-low); }
 
 /* ── Live dot ───────────────────────────────────────────────────────── */
 @keyframes live-pulse {

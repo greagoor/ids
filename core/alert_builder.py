@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from core.severity import severity_from_confidence
 
@@ -15,6 +16,7 @@ def build_alert(
     severity = severity_from_confidence(confidence, outcome)
 
     return {
+        "alert_uuid": str(uuid.uuid4()),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "attack_type": attack_type,
         "src_ip": src_ip,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { fetchAlerts, fetchModelMetrics } from '../lib/api'
+import { fetchAlerts, fetchModelMetrics, fetchInvestigationForAlert, SEVERITY_INT_MAP } from '../lib/api'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Brain, TrendingUp, AlertTriangle } from 'lucide-react'
 
@@ -32,7 +32,7 @@ function AlertSelector({ alerts, selected, onSelect }) {
   return (
     <select
       value={selected?.id || ''}
-      onChange={e => onSelect(alerts.find(a => a.id === e.target.value))}
+      onChange={e => onSelect(alerts.find(a => String(a.id) === String(e.target.value)))}
       className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none"
       style={{
         background: 'var(--bg-elevated)',
@@ -44,7 +44,7 @@ function AlertSelector({ alerts, selected, onSelect }) {
       <option value="">— Select an alert —</option>
       {alerts.map(a => (
         <option key={a.id} value={a.id}>
-          [{a.severity}] {a.attack_type} · {a.ip || a.src_ip} · {a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : ''}
+          [{SEVERITY_INT_MAP[a.severity] || a.severity}] {a.attack_type} · {a.ip || a.src_ip} · {a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : ''}
         </option>
       ))}
     </select>
@@ -72,6 +72,7 @@ export default function AiPanel() {
   const [metrics,  setMetrics]  = useState([])
   const [selected, setSelected] = useState(null)
   const [loading,  setLoading]  = useState(true)
+  const [investigation, setInvestigation] = useState(null)
 
   // Same data fetching as original
   useEffect(() => {
@@ -84,9 +85,39 @@ export default function AiPanel() {
     })
   }, [])
 
+  // Fetch investigation report when selected alert changes, and poll if not found yet
+  useEffect(() => {
+    if (!selected) {
+      setInvestigation(null)
+      return
+    }
+    setInvestigation(null)
+
+    const fetchInv = async () => {
+      const r = await fetchInvestigationForAlert(selected.alert_uuid || selected.id)
+      if (r.data) {
+        setInvestigation(r.data)
+        return true
+      }
+      return false
+    }
+
+    // Try immediately
+    fetchInv().then(found => {
+      if (!found) {
+        // Poll every 3 seconds until found
+        const intervalId = setInterval(async () => {
+          const success = await fetchInv()
+          if (success) clearInterval(intervalId)
+        }, 3000)
+        return () => clearInterval(intervalId)
+      }
+    })
+  }, [selected])
+
   // Same derived data as original
-  const shap      = selected?.shap_features || []
-  const invVerdict = selected?.investigation_verdict
+  const shap      = investigation?.metadata?.shap_features || []
+  const invVerdict = investigation?.metadata?.verdict || investigation?.metadata
 
   const repColor = invVerdict?.ip_reputation === 'MALICIOUS' ? 'var(--accent-danger)'
     : invVerdict?.ip_reputation === 'SUSPICIOUS' ? 'var(--accent-warning)'
@@ -122,7 +153,7 @@ export default function AiPanel() {
                 {label:'IP ADDRESS', value: selected.ip || selected.src_ip, color:'var(--text-primary)', mono:true},
                 {label:'ATTACK TYPE', value: selected.attack_type, color:'var(--accent-warning)'},
                 {label:'SUSPICION SCORE', value: `${((selected.suspicion_score||0)*100).toFixed(1)}%`, color:'var(--accent-cyan)', large:true},
-                {label:'VERDICT', value: selected.verdict||'—', color:`var(--accent-${(selected.verdict||'low').toLowerCase()==='critical'?'danger':(selected.verdict||'').toLowerCase()==='high'?'warning':'success'})`},
+                {label:'VERDICT', value: selected.verdict||'—', color:`var(--accent-${(SEVERITY_INT_MAP[selected.verdict]||selected.verdict||'low').toLowerCase()==='critical'?'danger':(SEVERITY_INT_MAP[selected.verdict]||selected.verdict||'').toLowerCase()==='high'?'warning':'success'})`},
               ].map(({label,value,color,mono,large}) => (
                 <div key={label}>
                   <p className="text-[9px] font-display tracking-widest mb-1.5" style={{color:'var(--text-muted)'}}>{label}</p>
@@ -211,9 +242,18 @@ export default function AiPanel() {
           ) : (
             <div className="hud-card p-6" style={{borderStyle:'dashed'}}>
               <div className="empty-state">
-                <Brain size={32}/>
-                <p className="font-display text-[10px] tracking-widest">NO INVESTIGATION REPORT</p>
-                <p>This alert may still be in-flight through the agent pipeline.</p>
+                <Brain size={32} style={{color: (selected.verdict === 'HIGH' || selected.verdict === 'CRITICAL') ? 'var(--accent-warning)' : 'currentColor'}}/>
+                {(selected.verdict === 'HIGH' || selected.verdict === 'CRITICAL') ? (
+                  <>
+                    <p className="font-display text-[10px] tracking-widest" style={{color:'var(--accent-warning)'}}>FAST-TRACKED (BYPASSED AI)</p>
+                    <p>This alert was immediately classified as {selected.verdict}. To minimize response time, it was fast-tracked directly to the automated firewall response, bypassing the deep AI investigation.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-display text-[10px] tracking-widest">NO INVESTIGATION REPORT YET</p>
+                    <p>This alert may still be in-flight through the agent pipeline. The dashboard will automatically poll and display the report once it finishes.</p>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -221,7 +261,7 @@ export default function AiPanel() {
       )}
 
       {/* Model metrics chart */}
-      {metrics.length > 0 && (
+      {metrics.length > 0 ? (
         <div className="hud-card p-6">
           <div className="flex items-center gap-2 mb-5">
             <TrendingUp size={14} style={{color:'var(--accent-success)'}}/>
@@ -235,7 +275,7 @@ export default function AiPanel() {
               <XAxis dataKey="timestamp"
                 tickFormatter={v => new Date(v).toLocaleDateString()}
                 tick={{fontSize:9, fill:'var(--text-muted)'}} />
-              <YAxis domain={[0,1]} tick={{fontSize:9, fill:'var(--text-muted)'}} />
+              <YAxis domain={['auto', 'auto']} padding={{ top: 20, bottom: 20 }} tick={{fontSize:9, fill:'var(--text-muted)'}} />
               <Tooltip content={<ChartTooltip/>} />
               <Line type="monotone" dataKey="accuracy" stroke="var(--accent-cyan)"   strokeWidth={2} dot={false} name="Accuracy"/>
               <Line type="monotone" dataKey="f1_score"  stroke="var(--accent-purple)" strokeWidth={2} dot={false} name="F1"/>
@@ -250,6 +290,20 @@ export default function AiPanel() {
               </p>
             </div>
           )}
+        </div>
+      ) : !loading && (
+        <div className="hud-card p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp size={14} style={{color:'var(--text-muted)'}}/>
+            <p className="text-[10px] font-display font-semibold tracking-widest" style={{color:'var(--text-muted)'}}>
+              MODEL PERFORMANCE METRICS
+            </p>
+          </div>
+          <div className="empty-state h-32">
+            <TrendingUp size={32}/>
+            <p className="font-display text-[10px] tracking-widest">NO METRICS RECORDED YET</p>
+            <p>The learning agent has not yet generated performance evaluations.</p>
+          </div>
         </div>
       )}
     </div>

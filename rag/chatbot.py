@@ -34,10 +34,11 @@ def _build_chat_prompt(user_query: str, context: str, analyst_role: str) -> str:
 {role_note}
 
 IMPORTANT RULES:
-1. Only use information from the CONTEXT BELOW to answer. Do not invent IP addresses, attack details, or incidents.
-2. If the answer is not in the context, say: "I don't have enough data in the knowledge base to answer that reliably."
-3. Be concise and precise — this is a live security environment.
-4. Always cite which data source (collection) the information came from.
+1. Only use information from the CONTEXT BELOW to answer questions about security events, alerts, and IPs. Do not invent attack details or incidents.
+2. If asked about a security event that is not in the context, say: "I don't have enough data in the knowledge base to answer that reliably."
+3. If the user asks a conversational question (e.g., "how are you", "who are you"), respond naturally without citing the knowledge base.
+4. Be concise and precise — this is a live security environment.
+5. Always cite which data source (collection) the information came from, when discussing context.
 
 CONTEXT FROM KNOWLEDGE BASE:
 {context}
@@ -82,7 +83,7 @@ async def answer_query(
 
     if not _api_key:
         return {
-            "answer":   f"[Gemini API key not configured] Context retrieved:\n\n{context}",
+            "answer":   f"**[Demo Mode: Gemini API Key Not Configured]**\n\nI searched the knowledge base and found the following relevant context:\n\n```text\n{context}\n```\n\n*In a live environment with a Gemini API key, I would synthesize this into a structured, analytical response based on your query.*",
             "sources":  sources,
             "grounded": True,
         }
